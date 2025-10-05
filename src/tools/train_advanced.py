@@ -30,9 +30,17 @@ def get_args():
     parser = argparse.ArgumentParser()
 
     # Backbone
-    parser.add_argument('--backbone-type', default='vit', choices=['vit', 'swin'])
+    parser.add_argument('--backbone-type', default='vit',
+                       choices=['vit', 'swin', 'resnet50', 'resnet101', 'resnet152'],
+                       help='Backbone type (vit works on older torchvision)')
     parser.add_argument('--backbone-name', default='vit_b_16')
-    parser.add_argument('--pretrained', default=True, action='store_true')
+    parser.add_argument('--pretrained', action='store_true',
+                       help='Use pretrained weights (requires internet connection)')
+    parser.add_argument('--no-pretrained', dest='pretrained', action='store_false',
+                       help='Train from scratch (no internet required)')
+    parser.add_argument('--pretrained-path', default=None, type=str,
+                       help='Path to local pretrained weights (for offline use)')
+    parser.set_defaults(pretrained=True)
 
     # Model
     parser.add_argument('--num-classes', default=5, type=int)
@@ -100,7 +108,7 @@ def main():
 
     # Quick test mode
     if args.quick_test:
-        print("\n🚀 Quick Test Mode Enabled!")
+        print("\nQuick Test Mode Enabled!")
         args.subset_size = 20
         args.epochs = 5
         args.batch_size = 2
@@ -162,6 +170,7 @@ def main():
         backbone_type=args.backbone_type,
         backbone_name=args.backbone_name,
         pretrained=args.pretrained,
+        weights_path=args.pretrained_path,
         num_classes=args.num_classes
     )
     model = model.to(device)

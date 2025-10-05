@@ -27,14 +27,30 @@ class ViTBackbone(nn.Module):
     Vision Transformer (ViT) Backbone with Adaptive Position Embedding
     Supports arbitrary input sizes by interpolating position embeddings
     """
-    def __init__(self, model_name='vit_b_16', pretrained=True):
+    def __init__(self, model_name='vit_b_16', pretrained=True, weights_path=None):
+        """
+        Args:
+            model_name: ViT model name
+            pretrained: Use pretrained weights
+            weights_path: Path to local weights file (for offline use)
+        """
         super().__init__()
 
-        from torchvision.models import vit_b_16, ViT_B_16_Weights
-
-        if pretrained:
+        # Load model with weights
+        if pretrained and weights_path:
+            # Load from local file (HPC offline mode)
+            print(f"Loading ViT weights from: {weights_path}")
+            self.vit = vit_b_16(weights=None)  # Create architecture only
+            state_dict = torch.load(weights_path, map_location='cpu')
+            self.vit.load_state_dict(state_dict)
+            print("ViT weights loaded successfully!")
+        elif pretrained:
+            # Download from internet (requires connection)
+            print("Downloading ViT pretrained weights...")
             self.vit = vit_b_16(weights=ViT_B_16_Weights.IMAGENET1K_V1)
         else:
+            # Random initialization
+            print("Using random initialization (no pretrained weights)")
             self.vit = vit_b_16(weights=None)
 
         # ViT-B/16: 768 channels
@@ -230,9 +246,13 @@ class AdvancedBackboneRCNN(CustomRCNN):
 
         # Create advanced backbone
         if backbone_type == 'vit':
-            self.backbone_net = ViTBackbone(pretrained=pretrained)
+            self.backbone_net = ViTBackbone(
+                model_name=backbone_name,
+                pretrained=pretrained,
+                weights_path=kwargs.get('weights_path', None)
+            )
         elif backbone_type == 'swin':
-            self.backbone_net = SwinBackbone(pretrained=pretrained)
+            self.backbone_net = SwinBackbone(model_name=backbone_name, pretrained=pretrained)
         else:
             raise ValueError(f"Unknown backbone type: {backbone_type}")
 
