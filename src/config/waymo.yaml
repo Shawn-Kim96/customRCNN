@@ -1,0 +1,10 @@
+dataPath: data/waymo
+train: images/train
+val: images/val
+
+names:
+  1: vehicle
+  2: pedestrian
+  3: cyclist
+  4: sign
+
