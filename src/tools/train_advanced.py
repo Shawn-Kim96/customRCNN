@@ -38,8 +38,8 @@ def get_args():
     parser.add_argument('--num-classes', default=5, type=int)
 
     # Dataset
-    parser.add_argument('--data-path', default='data/nuscenes_subset_coco_step10')
-    parser.add_argument('--annotation', default='data/nuscenes_subset_coco_step10/annotations.json')
+    parser.add_argument('--data-path', default='data/waymo')
+    parser.add_argument('--annotation', default='data/waymo/annotations.json')
 
     # Training
     parser.add_argument('--batch-size', default=2, type=int)
@@ -47,8 +47,14 @@ def get_args():
     parser.add_argument('--lr', default=0.002, type=float)
     parser.add_argument('--workers', default=4, type=int)
 
+    # Quick test
+    parser.add_argument('--subset-size', default=None, type=int,
+                       help='Use only N samples for quick testing (e.g., 20)')
+    parser.add_argument('--quick-test', action='store_true',
+                       help='Quick test mode: subset-size=20, epochs=5, batch-size=2')
+
     # Output
-    parser.add_argument('--output-dir', default='output/advanced_backbone')
+    parser.add_argument('--output-dir', default='src/result')
     parser.add_argument('--resume', default='')
 
     return parser.parse_args()
@@ -91,16 +97,30 @@ def train_one_epoch(model, optimizer, data_loader, device, epoch, args):
 
 def main():
     args = get_args()
+
+    # Quick test mode
+    if args.quick_test:
+        print("\n🚀 Quick Test Mode Enabled!")
+        args.subset_size = 20
+        args.epochs = 5
+        args.batch_size = 2
+        print(f"   Subset: {args.subset_size} samples")
+        print(f"   Epochs: {args.epochs}")
+        print(f"   Batch size: {args.batch_size}\n")
+
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     print(f"\n{'='*60}")
     print(f"Training Advanced Backbone R-CNN")
     print(f"  Device: {device}")
     print(f"  Backbone: {args.backbone_type}")
+    if args.subset_size:
+        print(f"  Subset size: {args.subset_size} samples")
     print(f"{'='*60}\n")
 
     # Dataset
     from DeepDataMiningLearning.detection import transforms as T
+    from torch.utils.data import Subset
 
     def get_transform(train):
         transforms = []
@@ -108,15 +128,24 @@ def main():
         transforms.append(T.ToDtype(torch.float, scale=True))
         return T.Compose(transforms)
 
-    train_dataset = WaymoCOCODataset(
+    full_dataset = WaymoCOCODataset(
         root=args.data_path,
         annotation=args.annotation,
         train=True,
         transform=get_transform(True)
     )
 
+    # Apply subset if specified
+    if args.subset_size:
+        import random
+        indices = random.sample(range(len(full_dataset)), min(args.subset_size, len(full_dataset)))
+        train_dataset = Subset(full_dataset, indices)
+        print(f"📊 Using subset: {len(train_dataset)} / {len(full_dataset)} samples")
+    else:
+        train_dataset = full_dataset
+
     # do not include background
-    label_dict = {i+1: value for i, value in enumerate(train_dataset.INSTANCE_CATEGORY_NAMES[1:])}
+    label_dict = {i+1: value for i, value in enumerate(full_dataset.INSTANCE_CATEGORY_NAMES[1:])}
     print(f"Dataset: {len(train_dataset)} images\n")
 
     train_loader = DataLoader(
@@ -143,7 +172,7 @@ def main():
     lr_scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
 
     # Output dir
-    output_dir = Path(args.output_dir)
+    output_dir = Path(os.path.join(Path(args.output_dir), f'advanced_backbone_{args.backbone_type}', f'ep{args.epochs}_lr{args.lr}'))
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # Training
