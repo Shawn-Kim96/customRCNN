@@ -26,21 +26,8 @@ class WaymoCOCODataset(torch.utils.data.Dataset):
         self.transform = transform
         self.coco = COCO(annotation)
         self.is_train = train
-        self.ids = list(sorted(self.coco.imgs.keys()))#id string list
-
-        #
-        dataset=self.coco.dataset #'images': image filename (images/xxx.jpg) with image_id (0000001)
-        imgToAnns=self.coco.imgToAnns #image_id to list of annotations
-        catToImgs =self.coco.catToImgs #three classes, 1,2,4
-        cats=self.coco.cats
-        self.numclass = 5 #len(catToImgs) + 1 #three classes + background
-        #num_classes=5 # ['unknown', 'vehicle', 'pedestrian', 'sign', 'cyclist']
-        #previous_num_classes = 4 #Unknown:0, Vehicles: 1, Pedestrians: 2, Cyclists: 3, Signs (removed)
-        #Real data only has 
+        self.ids = list(sorted(self.coco.imgs.keys()))#id string list 
         self.INSTANCE_CATEGORY_NAMES = ['__background__','Vehicles', 'Pedestrians', 'Cyclists', 'Signs']
-        #self.INSTANCE2id = {'__background__':0, 'Vehicles': 1, 'Pedestrians': 2, 'Cyclists': 4} #background is 0
-        #self.id2INSTANCE = {v: k for k, v in self.INSTANCE2id.items()}
-        #In annotation, class is 1,2,4
 
     
     def _get_target(self, id):
@@ -84,32 +71,16 @@ class WaymoCOCODataset(torch.utils.data.Dataset):
         img_id = self.ids[index]
         imginfo=self.coco.imgs[img_id]
         path = imginfo['file_name']
-        #print(f'index: {index}, img_id:{img_id}, info: {imginfo}')
 
-        # path for input image
-        #loadedimglist=coco.loadImgs(img_id)
-        # print(loadedimglist)
-        #path = coco.loadImgs(img_id)[0]['file_name']
-        #print("image path:", path)
-        # open the input image
         img = Image.open(os.path.join(self.root, path)).convert('RGB')
-        #img = Image.open(os.path.join(self.root, path)).convert('RGB')
-
 
         # List: get annotation id from coco
-        #ann_ids = coco.getAnnIds(imgIds=img_id)
         annolist=[self.coco.imgToAnns[img_id]]
         anns = list(itertools.chain.from_iterable(annolist))
         ann_ids = [ann['id'] for ann in anns]
         # Dictionary: target coco_annotation file for an image
         #ref: https://github.com/cocodataset/cocoapi/blob/master/PythonAPI/pycocotools/coco.py
         targets  = coco.loadAnns(ann_ids)
-        #targets=self.anns[ann_ids]
-        #print("targets:", targets)
-        
-        #image_id = targets["image_id"].item()
-
-        # number of objects in the image
         num_objs = len(targets)
 
         # Bounding boxes for objects

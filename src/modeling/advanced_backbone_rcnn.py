@@ -24,57 +24,90 @@ from src.modeling.modeling_rpnfasterrcnn import CustomRCNN
 
 class ViTBackbone(nn.Module):
     """
-    Use Vision Transformer (ViT) as a backbone
+    Vision Transformer (ViT) Backbone with Adaptive Position Embedding
+    Supports arbitrary input sizes by interpolating position embeddings
     """
-    def __init__(self, pretrained=True):
+    def __init__(self, model_name='vit_b_16', pretrained=True, weights_path=None):
+        """
+        Args:
+            model_name: ViT model name
+            pretrained: Use pretrained weights
+            weights_path: Path to local weights file (for offline use)
+        """
         super().__init__()
 
-        if pretrained:
+        # Load model with weights
+        if pretrained and weights_path:
+            # Load from local file (HPC offline mode)
+            print(f"Loading ViT weights from: {weights_path}")
+            self.vit = vit_b_16(weights=None)  # Create architecture only
+            state_dict = torch.load(weights_path, map_location='cpu')
+            self.vit.load_state_dict(state_dict)
+            print("ViT weights loaded successfully!")
+        elif pretrained:
+            # Download from internet (requires connection)
+            print("Downloading ViT pretrained weights...")
             self.vit = vit_b_16(weights=ViT_B_16_Weights.IMAGENET1K_V1)
         else:
+            # Random initialization
+            print("Using random initialization (no pretrained weights)")
             self.vit = vit_b_16(weights=None)
 
         # ViT-B/16: 768 channels
         self.out_channels = 768
-
-        # Feature map size (for 224x224 input: 14x14)
         self.patch_size = 16
+
+    def interpolate_pos_embedding(self, pos_embed, h, w):
+        """Interpolate position embeddings for arbitrary input sizes"""
+        N = pos_embed.shape[1] - 1  # Exclude cls token
+        D = pos_embed.shape[2]
+
+        if h * w == N:
+            return pos_embed
+
+        # Separate class token and patch embeddings
+        class_pos_embed = pos_embed[:, 0:1]
+        patch_pos_embed = pos_embed[:, 1:]
+
+        # Reshape and interpolate
+        old_h = old_w = int(N ** 0.5)
+        patch_pos_embed = patch_pos_embed.reshape(1, old_h, old_w, D).permute(0, 3, 1, 2)
+        patch_pos_embed = F.interpolate(patch_pos_embed, size=(h, w), mode='bicubic', align_corners=False)
+        patch_pos_embed = patch_pos_embed.permute(0, 2, 3, 1).reshape(1, h * w, D)
+
+        return torch.cat([class_pos_embed, patch_pos_embed], dim=1)
 
     def forward(self, x):
         """
         Args:
             x: [B, 3, H, W]
-
         Returns:
-            features: OrderedDict with single key '0'
-                '0': [B, 768, H//16, W//16]
+            features: OrderedDict {'0': [B, 768, H//16, W//16]}
         """
         B, C, H, W = x.shape
 
-        # ViT forward
-        # x = self.vit._process_input(x)  # [B, 197, 768] (1 cls + 196 patches)
-        x = self.vit.conv_proj(x)  # [B, 768, 14, 14]
-        x = x.flatten(2).transpose(1, 2)  # [B, 196, 768]
+        # Patchify
+        x = self.vit.conv_proj(x)  # [B, 768, h, w]
+        h, w = x.shape[2], x.shape[3]
+        x = x.flatten(2).transpose(1, 2)  # [B, h*w, 768]
 
         # Add class token
-        cls_token = self.vit.class_token.expand(B, -1, -1)  # [B, 1, 768]
-        x = torch.cat([cls_token, x], dim=1)  # [B, 197, 768]
+        cls_token = self.vit.class_token.expand(B, -1, -1)
+        x = torch.cat([cls_token, x], dim=1)  # [B, h*w+1, 768]
 
-        # Transformer encoder
-        x = self.vit.encoder(x)  # [B, 197, 768]
+        # Interpolate position embedding
+        pos_embed = self.interpolate_pos_embedding(self.vit.encoder.pos_embedding, h, w)
+        x = x + pos_embed
 
-        # Remove cls token and reshape to feature map
-        x = x[:, 1:]  # [B, 196, 768]
+        # Apply transformer
+        x = self.vit.encoder.dropout(x)
+        for layer in self.vit.encoder.layers:
+            x = layer(x)
+        x = self.vit.encoder.ln(x)
 
-        # Reshape to spatial feature map
-        h = w = int(x.shape[1] ** 0.5)  # 14
+        # Remove cls token and reshape
+        x = x[:, 1:]  # [B, h*w, 768]
         x = x.transpose(1, 2).reshape(B, self.out_channels, h, w)
-        # x: [B, 768, 14, 14]
-
-        # Upsample to match ResNet output size (stride=16 -> stride=4)
-        # This makes it compatible with FPN
-        x = F.interpolate(x, scale_factor=4, mode='bilinear', align_corners=True)
-        # x: [B, 768, 56, 56] for 224x224 input
 
         return OrderedDict([('0', x)])
 
@@ -135,10 +168,12 @@ class SimpleFPN(nn.Module):
         # Smooth layers
         self.smooth1 = nn.Conv2d(out_channels, out_channels, 3, padding=1)
         self.smooth2 = nn.Conv2d(out_channels, out_channels, 3, padding=1)
+        self.smooth3 = nn.Conv2d(out_channels, out_channels, 3, padding=1)
 
         # Downsampling for additional levels
         self.downsample1 = nn.Conv2d(out_channels, out_channels, 3, stride=2, padding=1)
         self.downsample2 = nn.Conv2d(out_channels, out_channels, 3, stride=2, padding=1)
+        self.downsample3 = nn.Conv2d(out_channels, out_channels, 3, stride=2, padding=1)
 
         self.out_channels = out_channels
 
@@ -148,12 +183,12 @@ class SimpleFPN(nn.Module):
             x: [B, in_channels, H, W]
 
         Returns:
-            features: OrderedDict with keys '0', '1', '2', '3'
+            features: OrderedDict with keys '0', '1', '2', '3', 'pool'
         """
         # Lateral connection
         p = self.lateral(x)  # [B, 256, H, W]
 
-        # Create multi-scale features
+        # Create multi-scale features (5 levels to match RPN anchors)
         # P3 (stride=8, assuming input is stride=16)
         p3 = self.upsample(p)  # [B, 256, H*2, W*2]
         p3 = self.smooth1(p3)
@@ -168,11 +203,16 @@ class SimpleFPN(nn.Module):
         # P6 (stride=64)
         p6 = self.downsample2(p5)  # [B, 256, H/4, W/4]
 
+        # P7/pool (stride=128)
+        p7 = self.downsample3(p6)  # [B, 256, H/8, W/8]
+        p7 = self.smooth3(p7)
+
         return OrderedDict([
             ('0', p3),
             ('1', p4),
             ('2', p5),
-            ('3', p6)
+            ('3', p6),
+            ('pool', p7)
         ])
 
 
@@ -206,9 +246,13 @@ class AdvancedBackboneRCNN(CustomRCNN):
 
         # Create advanced backbone
         if backbone_type == 'vit':
-            self.backbone_net = ViTBackbone(backbone_name, pretrained)
+            self.backbone_net = ViTBackbone(
+                model_name=backbone_name,
+                pretrained=pretrained,
+                weights_path=kwargs.get('weights_path', None)
+            )
         elif backbone_type == 'swin':
-            self.backbone_net = SwinBackbone(backbone_name, pretrained)
+            self.backbone_net = SwinBackbone(model_name=backbone_name, pretrained=pretrained)
         else:
             raise ValueError(f"Unknown backbone type: {backbone_type}")
 

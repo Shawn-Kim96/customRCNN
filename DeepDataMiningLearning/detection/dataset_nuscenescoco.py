@@ -1,4 +1,3 @@
-#ref: https://github.com/lkk688/WaymoObjectDetection/blob/master/MyDetector/torchvision_waymococo_train.py
 import torch
 import torchvision
 import numpy as np
@@ -28,21 +27,30 @@ class NuscenesCOCODataset(torch.utils.data.Dataset):
         self.is_train = train
         self.ids = list(sorted(self.coco.imgs.keys()))#id string list
 
-        #
         dataset=self.coco.dataset #'images': image filename (images/xxx.jpg) with image_id (0000001)
         imgToAnns=self.coco.imgToAnns #image_id to list of annotations
         catToImgs =self.coco.catToImgs #three classes, 1,2,4
         cats=self.coco.cats
         self.numclass = 5 #len(catToImgs) + 1 #three classes + background
-        #num_classes=5 # ['unknown', 'vehicle', 'pedestrian', 'sign', 'cyclist']
-        #previous_num_classes = 4 #Unknown:0, Vehicles: 1, Pedestrians: 2, Cyclists: 3, Signs (removed)
-        #Real data only has 
-        self.INSTANCE_CATEGORY_NAMES = ['__background__','Vehicles', 'Pedestrians', 'Cyclists', 'Signs']
-        #self.INSTANCE2id = {'__background__':0, 'Vehicles': 1, 'Pedestrians': 2, 'Cyclists': 4} #background is 0
-        #self.id2INSTANCE = {v: k for k, v in self.INSTANCE2id.items()}
-        #In annotation, class is 1,2,4
+        self.INSTANCE_CATEGORY_NAMES = ['__background__','Vehicles', 'Pedestrians', 'Cyclists', 'Signs']  # change to Waymo dataset format
 
-    
+        # Vehicles ← car, truck, bus, trailer, construction_vehicle
+        # Pedestrians ← pedestrian
+        # Cyclists ← bicycle, motorcycle
+        # Signs ← None
+        self.nuscences_to_waymo_category_dict = {
+            0: 1,
+            1: 1,
+            2: 1,
+            3: 1,
+            4: 1,
+            5: 2,
+            6: 3,
+            7: 3,
+            8: None,
+            9: None
+        }
+
     def _get_target(self, id):
         'Get annotations for sample'
 
@@ -84,31 +92,17 @@ class NuscenesCOCODataset(torch.utils.data.Dataset):
         img_id = self.ids[index]
         imginfo=self.coco.imgs[img_id]
         path = imginfo['file_name']
-        #print(f'index: {index}, img_id:{img_id}, info: {imginfo}')
-
-        # path for input image
-        #loadedimglist=coco.loadImgs(img_id)
-        # print(loadedimglist)
-        #path = coco.loadImgs(img_id)[0]['file_name']
-        #print("image path:", path)
-        # open the input image
         img = Image.open(os.path.join(self.root, path)).convert('RGB')
-        #img = Image.open(os.path.join(self.root, path)).convert('RGB')
 
 
         # List: get annotation id from coco
-        #ann_ids = coco.getAnnIds(imgIds=img_id)
         annolist=[self.coco.imgToAnns[img_id]]
         anns = list(itertools.chain.from_iterable(annolist))
         ann_ids = [ann['id'] for ann in anns]
         # Dictionary: target coco_annotation file for an image
         #ref: https://github.com/cocodataset/cocoapi/blob/master/PythonAPI/pycocotools/coco.py
         targets  = coco.loadAnns(ann_ids)
-        #targets=self.anns[ann_ids]
-        #print("targets:", targets)
         
-        #image_id = targets["image_id"].item()
-
         # number of objects in the image
         num_objs = len(targets)
 
@@ -127,40 +121,37 @@ class NuscenesCOCODataset(torch.utils.data.Dataset):
             xmax = xmin + width
             height = targets[i]['bbox'][3]
             ymax = ymin + height
+            original_category_id = targets[i]['category_id']
+            mapped_category_id = self.nuscences_to_waymo_category_dict.get(original_category_id, None)
+
+            # Skip if None (8, 9)
+            if mapped_category_id is None:
+                continue
+
             if xmin<=xmax and ymin<=ymax and xmin>=0 and ymin>=0 and width>1 and height>1:
-                target_bbox.append([xmin, ymin, xmax, ymax])
-                target_labels.append(targets[i]['category_id'])
-                #target_crowds.append(targets[i]['iscrowd'])
+                target_bbox.append([xmin, ymin, xmax, ymax]) 
+                target_labels.append(mapped_category_id)
                 target_areas.append(targets[i]['area'])
-        num_objs=len(target_bbox)
-        #print("target_bbox len:", num_objs)
+                target_crowds.append(targets[i].get('iscrowd', 0))
+
+        num_objs=len(target_labels)
         if num_objs>0:
-            #print("target_labels:", target_labels)
             target['boxes'] = torch.as_tensor(target_bbox, dtype=torch.float32)
             # Labels int value for class
             target['labels'] = torch.as_tensor(np.array(target_labels), dtype=torch.int64)
-            #target['image_id'] = torch.tensor([int(img_id)])
-            #target['image_id'] = torch.tensor(int(img_id))
             target['image_id'] = int(img_id)
-            #torch.tensor([int(frameitem.context.name.split("_")[-2] + str(index))])
             target["area"] = torch.as_tensor(np.array(target_areas), dtype=torch.float32)
             target["iscrowd"] = torch.as_tensor(np.array(target_crowds), dtype=torch.int64)#torch.zeros((len(target['boxes'])), dtype=torch.int64)
         else:
             #negative example, ref: https://github.com/pytorch/vision/issues/2144
             target['boxes'] = torch.zeros((0, 4), dtype=torch.float32)#not empty
             target['labels'] = torch.as_tensor(np.array(target_labels), dtype=torch.int64)#empty
-            #target['image_id'] = torch.tensor([int(img_id)])
-            #target['image_id'] = torch.tensor(int(img_id))
             target['image_id'] = int(img_id)
             target["area"] = torch.as_tensor(np.array(target_areas), dtype=torch.float32)#empty
             target["iscrowd"] = torch.as_tensor(np.array(target_crowds), dtype=torch.int64)#empty
 
-        # if self.transforms is not None:
-        #     img = self.transforms(img)
         if self.transform:
-            # img, target = self.transform(img, target)
             img = self.transform(img)
-        #print("target:", target)
         return img, target
 
     def __len__(self):
@@ -206,6 +197,7 @@ def dataset_summary(coco):
     print(f"\nTotal Images: {len(coco.dataset['images'])}")
     print(f"Total Annotations: {len(coco.dataset['annotations'])}")
 
+
 def visualize_sample(dataset, idx=0, save_dir="vis_output"):
     """Visualize a dataset sample with bounding boxes and save to file."""
     img, target = dataset[idx]
@@ -242,7 +234,6 @@ def visualize_sample(dataset, idx=0, save_dir="vis_output"):
     plt.close(fig)
 
     print(f"✅ Saved visualization to {save_path}")
-
 
 
 def export_folder_to_video(dataset, folder_name, save_path="output_video.mp4", fps=5):
@@ -324,6 +315,7 @@ def check_image_color(img_path):
     axs[1].imshow(cv_img_rgb)
     axs[1].set_title("OpenCV (BGR→RGB)")
     plt.show()
+
 
 def subsample_dataset(dataset_root, ann_file, output_root, step=8, resize_scale=None):
     """
@@ -421,7 +413,6 @@ def subsample_dataset(dataset_root, ann_file, output_root, step=8, resize_scale=
 
 
 if __name__ == "__main__":
-    #check_image_color("/data/Datasets/WaymoCOCO/Training/training_0031/9529958888589376527_640_000_660_000_1557956305498634_FRONT.jpg")
     subsample_dataset(
         dataset_root="/data/Datasets/WaymoCOCO/Training",
         ann_file="/data/Datasets/WaymoCOCO/Training/annotations.json",
@@ -438,21 +429,21 @@ if __name__ == "__main__":
     #jsonfile = '3classsub_annotations_trainall.json' #4 classes, 0,1,2,4 20820
     ann_file = os.path.join(data_root, jsonfile)#'annotations_train20new.json'
     # create own Dataset
-    mywaymodataset = WaymoCOCODataset(root=data_root,  
+    mynuscenesdataset = NuscenesCOCODataset(root=data_root,  
                           annotation=ann_file
                           )
-    length = len(mywaymodataset)
-    print("Dataset",len(mywaymodataset))#85008
-    img, target = mywaymodataset[0]
+    length = len(mynuscenesdataset)
+    print("Dataset",len(mynuscenesdataset))#85008
+    img, target = mynuscenesdataset[0]
     print(target.keys())
 
-    print("Dataset length:", len(mywaymodataset))
-    validate_annotations(mywaymodataset.coco, data_root)
-    dataset_summary(mywaymodataset.coco)
+    print("Dataset length:", len(mynuscenesdataset))
+    validate_annotations(mynuscenesdataset.coco, data_root)
+    dataset_summary(mynuscenesdataset.coco)
 
     # Visualize a few samples
     for i in [0, 100, 150, 155, 160, 170, 175]:  # pick some indices
-        visualize_sample(mywaymodataset, idx=i, save_dir='output')
+        visualize_sample(mynuscenesdataset, idx=i, save_dir='output')
     
     # Export all annotated images in one folder into a video
-    export_folder_to_video(mywaymodataset, folder_name="training_0031", save_path="output/training_0031.mp4", fps=5)
+    export_folder_to_video(mynuscenesdataset, folder_name="training_0031", save_path="output/training_0031.mp4", fps=5)

@@ -1,10 +1,12 @@
+src/result
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
 
 # C extensions
-*.so
+*.so1
 
 # Distribution / packaging
 .Python
@@ -128,6 +130,7 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
+data
 data/
 *.pt
 *.tar
