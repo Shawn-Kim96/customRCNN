@@ -31,15 +31,15 @@ def main():
     parser = argparse.ArgumentParser(description='Train Advanced Backbone R-CNN on Combined Datasets')
 
     # Dataset - Waymo
-    parser.add_argument('--waymo-root', default='/data/waymo',
+    parser.add_argument('--waymo-root', default='data/waymo',
                         help='Waymo dataset root path')
-    parser.add_argument('--waymo-annotation', default='/data/waymo/annotations.json',
+    parser.add_argument('--waymo-annotation', default='annotations.json',
                         help='Waymo annotation file name')
 
     # Dataset - Nuscenes
-    parser.add_argument('--nuscenes-root', default='/data/nuscenes',
+    parser.add_argument('--nuscenes-root', default='data/nuscenes',
                         help='Nuscenes dataset root path')
-    parser.add_argument('--nuscenes-annotation', default='/data/nuscenes/annotations.json',
+    parser.add_argument('--nuscenes-annotation', default='annotations.json',
                         help='Nuscenes annotation file name')
 
     # Dataset split ratios
@@ -56,8 +56,10 @@ def main():
                         help='backbone architecture')
     parser.add_argument('--num-classes', default=5, type=int,
                         help='number of classes (background + 4 classes)')
-    parser.add_argument('--pretrained', action='store_true',
-                        help='use pretrained backbone')
+    parser.add_argument('--pretrained', default=True, type=bool,
+                        help='use pretrained backbone (bool)')
+    parser.add_argument('--pretrained-path', default='data/pretrained_models/vit/vit_b_16_weights.pth',
+                        help='pretrained weight path')
 
     # Training
     parser.add_argument('--epochs', default=20, type=int,
@@ -80,7 +82,7 @@ def main():
                         help='save checkpoint every N epochs')
 
     # Misc
-    parser.add_argument('--output-dir', default='/src/results',
+    parser.add_argument('--output-dir', default='src/result',
                         help='path to save outputs')
     parser.add_argument('--workers', default=4, type=int,
                         help='number of data loading workers')
@@ -197,7 +199,8 @@ def main():
     model = AdvancedBackboneRCNN(
         backbone_name=args.backbone,
         num_classes=args.num_classes,
-        pretrained=args.pretrained
+        pretrained=args.pretrained,
+        weights_path=args.pretrained_path
     ).to(device)
 
     print(f"Model created with {args.num_classes} classes")
@@ -231,7 +234,7 @@ def main():
     print(f"Starting Training")
     print(f"{'='*70}\n")
 
-    output_dir = Path(os.path.join(Path(args.output_dir), f'advanced_backbone_{args.backbone_type}', f'ep{args.epochs}_lr{args.lr}_mom{args.momentum}_wd{args.weight_decay}'))
+    output_dir = Path(os.path.join(Path(args.output_dir), f'advanced_backbone_{args.backbone}', f'ep{args.epochs}_lr{args.lr}_mom{args.momentum}_wd{args.weight_decay}'))
     output_dir.mkdir(parents=True, exist_ok=True)
 
     train_combined(
