@@ -42,12 +42,12 @@ WAYMO_CLASS_NAMES = {
 }
 
 
-def save_nuscenes_dataset(dataset_dir, train_ratio: float = 0.8, val_ratio: float = 0.1, random_seed: int=42):
+def load_nuscenes_dataset(data_dir, anno_path, train_ratio: float = 0.8, val_ratio: float = 0.1, random_seed: int=42):
     transform = create_nuscenes_transforms(train=True)
 
     dataset = NuscenesCOCODataset(
-        root='data/nuscenes_subset_coco_step10',
-        annotation = 'data/nuscenes_subset_coco_step10/annotations.json',
+        root=data_dir,
+        annotation=anno_path,
         train=True,
         transform=transform
     )
@@ -61,17 +61,17 @@ def save_nuscenes_dataset(dataset_dir, train_ratio: float = 0.8, val_ratio: floa
         generator=torch.Generator().manual_seed(random_seed)
     )
 
-    torch.save(train_dataset, os.path.join(dataset_dir, 'train_nuscenes_dataset.pt'))
-    torch.save(val_dataset, os.path.join(dataset_dir, 'val_nuscenes_dataset.pt'))
-    torch.save(test_dataset, os.path.join(dataset_dir, 'test_nuscenes_dataset.pt'))
+    # torch.save(train_dataset, os.path.join(dataset_dir, 'train_nuscenes_dataset.pt'))
+    # torch.save(val_dataset, os.path.join(dataset_dir, 'val_nuscenes_dataset.pt'))
+    # torch.save(test_dataset, os.path.join(dataset_dir, 'test_nuscenes_dataset.pt'))
     return train_dataset, val_dataset, test_dataset
 
 
-def save_waymo_dataset(dataset_dir, train_ratio: float = 0.8, val_ratio: float = 0.1, random_seed: int=42):
+def load_waymo_dataset(data_dir, anno_path, train_ratio: float = 0.8, val_ratio: float = 0.1, random_seed: int=42):
     transform = get_transformsimple(None)
     dataset = WaymoCOCODataset(
-        root='data/waymo',
-        annotation = 'data/waymo/annotations.json',
+        root=data_dir,
+        annotation=anno_path,
         train=True,
         transform=transform
     )
@@ -85,9 +85,9 @@ def save_waymo_dataset(dataset_dir, train_ratio: float = 0.8, val_ratio: float =
         generator=torch.Generator().manual_seed(random_seed)
     )
 
-    torch.save(train_dataset, os.path.join(dataset_dir, 'train_nuscenes_dataset.pt'))
-    torch.save(val_dataset, os.path.join(dataset_dir, 'val_nuscenes_dataset.pt'))
-    torch.save(test_dataset, os.path.join(dataset_dir, 'test_nuscenes_dataset.pt'))
+    # torch.save(train_dataset, os.path.join(dataset_dir, 'train_nuscenes_dataset.pt'))
+    # torch.save(val_dataset, os.path.join(dataset_dir, 'val_nuscenes_dataset.pt'))
+    # torch.save(test_dataset, os.path.join(dataset_dir, 'test_nuscenes_dataset.pt'))
     return train_dataset, val_dataset, test_dataset
 
 
