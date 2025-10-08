@@ -37,6 +37,7 @@ class CocoEvaluator:
 
         for iou_type in self.iou_types:
             results = self.prepare(predictions, iou_type)
+            
             with redirect_stdout(io.StringIO()):
                 coco_dt = COCO.loadRes(self.coco_gt, results) if results else COCO()
             coco_eval = self.coco_eval[iou_type]
@@ -248,6 +249,8 @@ def convert_to_coco_api2(ds):#mykittidetectiondataset
         labels = targets["labels"].tolist()
         areas = targets["area"].tolist()
         iscrowd = targets["iscrowd"].tolist()
+        if not iscrowd:
+            iscrowd = [0] * len(areas)
         if "masks" in targets:
             masks = targets["masks"]
             # make masks Fortran contiguous for coco_mask
@@ -304,6 +307,8 @@ def convert_to_coco_api(ds):#mykittidetectiondataset
         labels = targets["labels"].tolist() #torch.Size([23]) -> list 23 [1,1,1]
         areas = targets["area"].tolist() #torch.Size([23]) -> list 23 []
         iscrowd = targets["iscrowd"].tolist() #torch.Size([23]) -> list
+        if not iscrowd:
+            iscrowd = [0] * len(areas)
         if "masks" in targets:
             masks = targets["masks"]
             # make masks Fortran contiguous for coco_mask

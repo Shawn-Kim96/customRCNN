@@ -7,7 +7,7 @@ Evaluates separately on each dataset
 
 import torch
 import torch.optim as optim
-from torch.utils.data import DataLoader, ConcatDataset
+from torch.utils.data import DataLoader, ConcatDataset, Subset
 import sys
 import os
 import argparse
@@ -88,6 +88,8 @@ def main():
                         help='number of data loading workers')
     parser.add_argument('--device', default='cuda', help='device (cuda or cpu)')
     parser.add_argument('--resume', default='', help='resume from checkpoint')
+    parser.add_argument('--sample-test', default=False, type=bool)
+    parser.add_argument('--sample-test-data-cnt', default=5, type=int)
 
     args = parser.parse_args()
 
@@ -136,6 +138,15 @@ def main():
     print(f"Total Train: {len(combined_train_dataset)} samples "
           f"(Waymo: {len(waymo_train)}, Nuscenes: {len(nuscenes_train)})")
 
+    # small subset if sample test is true
+    if args.sample_test:
+        sample_data_cnt = args.sample_test_data_cnt
+        combined_train_dataset = Subset(combined_train_dataset, list(range(sample_data_cnt)))
+        waymo_val = Subset(waymo_val, list(range(sample_data_cnt)))
+        nuscenes_val = Subset(nuscenes_val, list(range(sample_data_cnt)))
+        waymo_test = Subset(waymo_test, list(range(sample_data_cnt)))
+        nuscenes_test = Subset(nuscenes_test, list(range(sample_data_cnt)))
+    
     # ========================================
     # Create DataLoaders
     # ========================================
@@ -236,7 +247,7 @@ def main():
 
     output_dir = Path(os.path.join(Path(args.output_dir), f'advanced_backbone_{args.backbone}', f'ep{args.epochs}_lr{args.lr}_mom{args.momentum}_wd{args.weight_decay}'))
     output_dir.mkdir(parents=True, exist_ok=True)
-
+    
     train_combined(
         model=model,
         optimizer_param=optimizer_param,
