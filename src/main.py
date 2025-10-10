@@ -99,6 +99,8 @@ def main():
     parser.add_argument('--sample-test', default=False, type=bool)
     parser.add_argument('--sample-test-data-cnt', default=1, type=int)
 
+    default_pretrained_path = parser.get_default('pretrained_path')
+
     args = parser.parse_args()
 
     # Device
@@ -220,8 +222,13 @@ def main():
         backbone_type = backbone_cfg["type"]
 
         candidate_paths = []
-        if args.pretrained_path:
-            candidate_paths.append(args.pretrained_path)
+        supplied_path = Path(args.pretrained_path) if args.pretrained_path else None
+        if supplied_path:
+            # If user overrides the default path or the filename matches the backbone, accept it.
+            user_overrode_default = args.pretrained_path != default_pretrained_path
+            filename_matches = args.backbone in supplied_path.name
+            if user_overrode_default or filename_matches:
+                candidate_paths.append(args.pretrained_path)
 
         if backbone_type == "vit":
             default_vit_path = Path("data/pretrained_models/vit") / f"{args.backbone}_weights.pth"
