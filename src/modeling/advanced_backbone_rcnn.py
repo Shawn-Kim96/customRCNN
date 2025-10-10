@@ -11,7 +11,16 @@ from typing import Dict, List, Tuple, Optional
 from collections import OrderedDict
 import sys
 import os
-from torchvision.models import vit_b_16, ViT_B_16_Weights
+from torchvision.models import (
+    vit_b_16,
+    ViT_B_16_Weights,
+    swin_t,
+    Swin_T_Weights,
+    swin_s,
+    Swin_S_Weights,
+    swin_b,
+    Swin_B_Weights,
+)
 
 
 PROJECT_NAME = "customRCNN"
@@ -118,19 +127,34 @@ class SwinBackbone(nn.Module):
 
     Hierarchical vision transformer, better for detection tasks.
     """
-    def __init__(self, model_name='swin_t', pretrained=True):
+    def __init__(self, model_name='swin_t', pretrained=True, weights_path: Optional[str] = None):
         super().__init__()
 
-        from torchvision.models import swin_t, Swin_T_Weights
+        constructors = {
+            'swin_t': (swin_t, Swin_T_Weights),
+            'swin_s': (swin_s, Swin_S_Weights),
+            'swin_b': (swin_b, Swin_B_Weights),
+        }
+        if model_name not in constructors:
+            raise ValueError(f"Unsupported Swin model: {model_name}")
 
-        if pretrained:
-            self.swin = swin_t(weights=Swin_T_Weights.IMAGENET1K_V1)
+        constructor, weight_enum = constructors[model_name]
+
+        if pretrained and weights_path:
+            print(f"Loading Swin weights from: {weights_path}")
+            self.swin = constructor(weights=None)
+            state_dict = torch.load(weights_path, map_location='cpu')
+            self.swin.load_state_dict(state_dict)
+            print("Swin weights loaded successfully!")
+        elif pretrained:
+            print(f"Downloading Swin pretrained weights ({model_name})...")
+            self.swin = constructor(weights=weight_enum.IMAGENET1K_V1)
         else:
-            self.swin = swin_t(weights=None)
+            print(f"Using random initialization for Swin backbone: {model_name}")
+            self.swin = constructor(weights=None)
 
-        # Swin-T output channels for different stages
-        # We'll use the last stage
-        self.out_channels = 768  # Stage 4 output
+        # Stage-4 channel dimension depends on model size
+        self.out_channels = self.swin.head.in_features
 
     def forward(self, x):
         """
@@ -141,7 +165,8 @@ class SwinBackbone(nn.Module):
             features: OrderedDict
         """
         # Swin features (only use last stage for simplicity)
-        features = self.swin.features(x)  # [B, 768, H//32, W//32]
+        features = self.swin.features(x)  # [B, H//32, W//32, 768]
+        features = features.permute(0, 3, 1, 2).contiguous()  # [B, 768, H//32, W//32]
 
         # Optionally upsample for higher resolution
         features = F.interpolate(features, scale_factor=2, mode='bilinear', align_corners=True)
@@ -252,7 +277,11 @@ class AdvancedBackboneRCNN(CustomRCNN):
                 weights_path=kwargs.get('weights_path', None)
             )
         elif backbone_type == 'swin':
-            self.backbone_net = SwinBackbone(model_name=backbone_name, pretrained=pretrained)
+            self.backbone_net = SwinBackbone(
+                model_name=backbone_name,
+                pretrained=pretrained,
+                weights_path=kwargs.get('weights_path', None)
+            )
         else:
             raise ValueError(f"Unknown backbone type: {backbone_type}")
 
