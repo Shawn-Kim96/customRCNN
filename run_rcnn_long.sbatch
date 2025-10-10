@@ -15,12 +15,29 @@ echo "Allocated GPUs:"
 nvidia-smi
 
 timestamp=$(date +"%y%m%dT%H%M%S")
-backboneName="vit_b_16"       
-logfile="logs/${timestamp}_bbt-${backboneName}_train.log"
+mkdir -p logs
 
-nohup python src/main.py \
-    --backbone "$backboneName" \
-    --batch-size 2\
-    --pretrained-path data/pretrained_models/vit/vit_b_16_weights.pth \
-    > "$logfile" 2>&1 &
-wait
+run_training () {
+    local backbone="$1"
+    shift
+    local logfile="logs/${timestamp}_bbt-${backbone}_train.log"
+    echo "Starting training for backbone: ${backbone}"
+    echo "Logging to: ${logfile}"
+    nohup python src/main.py \
+        --backbone "$backbone" \
+        "$@" \
+        > "$logfile" 2>&1 &
+    wait $!
+    echo "Finished training for backbone: ${backbone}"
+}
+
+// run_training "vit_b_16" \
+//     --batch-size 2 \
+//     --pretrained-path data/pretrained_models/vit/vit_b_16_weights.pth
+
+run_training "resnet101" \
+    --batch-size 2 \
+    --trainable-layers 2
+
+run_training "swin_t" \
+    --batch-size 2
