@@ -22,6 +22,26 @@ sys.path.insert(0, PROJECT_DIR)
 
 from src.tools.evaluate import evaluate_coco
 
+# Backbone registries shared with training scripts.
+# Advanced variants rely on transformer-based feature extractors,
+# while standard variants fall back to torchvision ResNet + FPN.
+ADVANCED_BACKBONES = {
+    "vit_b_16": {"type": "vit"},
+    "vit_b_32": {"type": "vit"},
+    "vit_l_16": {"type": "vit"},
+    "swin_t": {"type": "swin"},
+    "swin_s": {"type": "swin"},
+    "swin_b": {"type": "swin"},
+}
+
+STANDARD_BACKBONES = {
+    "resnet50": {"trainable_layers": 2},
+    "resnet101": {"trainable_layers": 2},
+    "resnet152": {"trainable_layers": 2},
+}
+
+BACKBONE_CHOICES = tuple(list(ADVANCED_BACKBONES.keys()) + list(STANDARD_BACKBONES.keys()))
+
 
 def train_one_epoch(model, optimizer, data_loader, device, epoch, args):
     model.train()
@@ -123,6 +143,10 @@ def train_combined(model, optimizer_param, scheduler_param, model_save_path,
     print(f"\n{'='*70}")
     print(f"Training Configuration")
     print(f"{'='*70}")
+    model_variant = getattr(args, "model_variant", "advanced" if getattr(args, "backbone", None) in ADVANCED_BACKBONES else "standard")
+    print(f"Model variant: {model_variant}")
+    if hasattr(args, "backbone"):
+        print(f"Backbone: {args.backbone}")
     print(f"Total epochs: {args.epochs}")
     print(f"Train samples: {len(train_loader.dataset)}")
     print(f"Val Waymo samples: {len(val_waymo_loader.dataset)}")

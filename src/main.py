@@ -21,8 +21,14 @@ sys.path.insert(0, DETECTION_DIR)
 sys.path.insert(0, PROJECT_DIR)
 
 from src.modeling.advanced_backbone_rcnn import AdvancedBackboneRCNN
+from src.modeling.modeling_rpnfasterrcnn import CustomRCNN
 from src.dataset.load_dataset import load_nuscenes_dataset, load_waymo_dataset
-from src.tools.train_advanced import train_combined
+from src.tools.train_advanced import (
+    train_combined,
+    ADVANCED_BACKBONES,
+    STANDARD_BACKBONES,
+    BACKBONE_CHOICES,
+)
 from src.tools.evaluate import evaluate_coco
 
 
@@ -52,8 +58,10 @@ def main():
 
     # Model
     parser.add_argument('--backbone', default='vit_b_16',
-                        choices=['vit_b_16', 'vit_b_32', 'vit_l_16', 'swin_t', 'swin_s', 'swin_b'],
-                        help='backbone architecture')
+                        choices=BACKBONE_CHOICES,
+                        help='backbone architecture (advanced ViT/Swin or standard ResNet variants)')
+    parser.add_argument('--trainable-layers', default=2, type=int,
+                        help='number of trainable layers for standard ResNet backbones')
     parser.add_argument('--num-classes', default=5, type=int,
                         help='number of classes (background + 4 classes)')
     parser.add_argument('--pretrained', default=True, type=bool,
@@ -89,7 +97,7 @@ def main():
     parser.add_argument('--device', default='cuda', help='device (cuda or cpu)')
     parser.add_argument('--resume', default='', help='resume from checkpoint')
     parser.add_argument('--sample-test', default=False, type=bool)
-    parser.add_argument('--sample-test-data-cnt', default=5, type=int)
+    parser.add_argument('--sample-test-data-cnt', default=1, type=int)
 
     args = parser.parse_args()
 
@@ -207,15 +215,56 @@ def main():
     print(f"Creating Model: {args.backbone}")
     print(f"{'='*70}")
 
-    model = AdvancedBackboneRCNN(
-        backbone_name=args.backbone,
-        num_classes=args.num_classes,
-        pretrained=args.pretrained,
-        weights_path=args.pretrained_path
-    ).to(device)
+    if args.backbone in ADVANCED_BACKBONES:
+        backbone_cfg = ADVANCED_BACKBONES[args.backbone]
+        backbone_type = backbone_cfg["type"]
+
+        candidate_paths = []
+        if args.pretrained_path:
+            candidate_paths.append(args.pretrained_path)
+
+        if backbone_type == "vit":
+            default_vit_path = Path("data/pretrained_models/vit") / f"{args.backbone}_weights.pth"
+            candidate_paths.append(str(default_vit_path))
+        elif backbone_type == "swin":
+            default_swin_path = Path("data/pretrained_models/swin") / f"{args.backbone}_weights.pth"
+            candidate_paths.append(str(default_swin_path))
+
+        weights_path = None
+        for path_str in candidate_paths:
+            path = Path(path_str)
+            if path.is_file():
+                weights_path = str(path)
+                break
+
+        model = AdvancedBackboneRCNN(
+            backbone_type=backbone_type,
+            backbone_name=args.backbone,
+            num_classes=args.num_classes,
+            pretrained=args.pretrained,
+            weights_path=weights_path
+        ).to(device)
+        args.model_variant = 'advanced'
+        args.backbone_type = backbone_type
+        print(f"Advanced backbone type: {backbone_type}")
+        print(f"Pretrained backbone: {args.pretrained}")
+        if weights_path:
+            print(f"Using weights from: {weights_path}")
+    elif args.backbone in STANDARD_BACKBONES:
+        default_layers = STANDARD_BACKBONES[args.backbone].get("trainable_layers", 2)
+        trainable_layers = args.trainable_layers if args.trainable_layers >= 0 else default_layers
+        model = CustomRCNN(
+            backbone_modulename=args.backbone,
+            trainable_layers=trainable_layers,
+            num_classes=args.num_classes
+        ).to(device)
+        args.model_variant = 'standard'
+        args.trainable_layers = trainable_layers
+        print(f"Standard ResNet backbone with {trainable_layers} trainable layers")
+    else:
+        raise ValueError(f"Unsupported backbone selection: {args.backbone}")
 
     print(f"Model created with {args.num_classes} classes")
-    print(f"Pretrained backbone: {args.pretrained}")
 
     # Resume from checkpoint if specified
     if args.resume:
@@ -245,7 +294,9 @@ def main():
     print(f"Starting Training")
     print(f"{'='*70}\n")
 
-    output_dir = Path(os.path.join(Path(args.output_dir), f'advanced_backbone_{args.backbone}', f'ep{args.epochs}_lr{args.lr}_mom{args.momentum}_wd{args.weight_decay}'))
+    output_subdir = f"{args.model_variant}_backbone_{args.backbone}"
+    run_signature = f'ep{args.epochs}_lr{args.lr}_mom{args.momentum}_wd{args.weight_decay}'
+    output_dir = Path(args.output_dir) / output_subdir / run_signature
     output_dir.mkdir(parents=True, exist_ok=True)
     
     train_combined(
