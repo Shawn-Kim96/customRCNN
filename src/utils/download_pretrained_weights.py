@@ -10,10 +10,16 @@ from torchvision.models import (
     swin_s,
     swin_t,
     vit_b_16,
+    resnet50,
+    resnet101,
+    resnet152,
     Swin_B_Weights,
     Swin_S_Weights,
     Swin_T_Weights,
     ViT_B_16_Weights,
+    ResNet50_Weights,
+    ResNet101_Weights,
+    ResNet152_Weights,
 )
 
 PROJECT_NAME = "customRCNN"
@@ -49,6 +55,24 @@ MODEL_REGISTRY: Dict[str, Dict[str, object]] = {
         "subdir": "swin",
         "filename": "swin_b_weights.pth",
     },
+    "resnet50": {
+        "constructor": resnet50,
+        "weights": ResNet50_Weights.IMAGENET1K_V2,
+        "subdir": "resnet",
+        "filename": "resnet50_weights.pth",
+    },
+    "resnet101": {
+        "constructor": resnet101,
+        "weights": ResNet101_Weights.IMAGENET1K_V2,
+        "subdir": "resnet",
+        "filename": "resnet101_weights.pth",
+    },
+    "resnet152": {
+        "constructor": resnet152,
+        "weights": ResNet152_Weights.IMAGENET1K_V2,
+        "subdir": "resnet",
+        "filename": "resnet152_weights.pth",
+    },
 }
 
 
@@ -75,7 +99,7 @@ def download_and_save(model_name: str):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Download pretrained weights for ViT and Swin backbones.")
+    parser = argparse.ArgumentParser(description="Download pretrained weights for ViT, Swin, and ResNet backbones.")
     parser.add_argument(
         "--models",
         nargs="+",
