@@ -35,9 +35,10 @@ run_training () {
 //     --batch-size 2 \
 //     --pretrained-path data/pretrained_models/vit/vit_b_16_weights.pth
 
-run_training "resnet101" \
-    --batch-size 2 \
-    --trainable-layers 2
+// run_training "resnet101" \
+//     --batch-size 2 \
+//     --trainable-layers 2
 
 run_training "swin_t" \
-    --batch-size 2
+    --batch-size 4
+    --resume /home/018219422/customRCNN/src/result/advanced_backbone_swin_t/ep20_lr0.005_mom0.9_wd0.0005/checkpoint_epoch_5.pth
