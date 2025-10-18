@@ -107,6 +107,9 @@ def main():
     device = torch.device(args.device if torch.cuda.is_available() else 'cpu')
     print(f"Using device: {device}")
 
+    # Track resume starting epoch (0 by default)
+    args.start_epoch = 0
+
     # ========================================
     # Load Datasets using load_dataset.py
     # ========================================
@@ -278,7 +281,12 @@ def main():
         print(f"Loading checkpoint from {args.resume}")
         checkpoint = torch.load(args.resume, map_location=device)
         model.load_state_dict(checkpoint['model'])
-        print(f"Resumed from epoch {checkpoint.get('epoch', 'unknown')}")
+        resume_epoch = checkpoint.get('epoch')
+        if resume_epoch is not None:
+            args.start_epoch = resume_epoch + 1
+            print(f"Resumed from epoch {args.start_epoch}")
+        else:
+            print("Resumed from checkpoint without epoch metadata; starting from epoch 1")
 
     # ========================================
     # Optimizer & Scheduler Parameters

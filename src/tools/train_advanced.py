@@ -47,7 +47,8 @@ def train_one_epoch(model, optimizer, data_loader, device, epoch, args):
     model.train()
     total_losses = {}
 
-    pbar = tqdm(data_loader, desc=f'Epoch {epoch}/{args.epochs}')
+    total_epochs = getattr(args, "epochs", epoch)
+    pbar = tqdm(data_loader, desc=f'Epoch {epoch}/{total_epochs}')
 
     for images, targets in pbar:
         images = [img.to(device) for img in images]
@@ -75,6 +76,9 @@ def train_one_epoch(model, optimizer, data_loader, device, epoch, args):
 
 
 def train(model, optimizer_param, scheduler_param, model_save_path, train_loader, val_loader, device, args):
+    start_epoch = max(0, getattr(args, "start_epoch", 0))
+    total_epochs = args.epochs
+
     params = [p for p in model.parameters() if p.requires_grad]
     optimizer = optim.SGD(params, **optimizer_param)
     lr_scheduler = optim.lr_scheduler.StepLR(optimizer, **scheduler_param)
@@ -87,25 +91,29 @@ def train(model, optimizer_param, scheduler_param, model_save_path, train_loader
     from src.tools.evaluate import evaluate_coco
 
     # Training
-    for epoch in range(args.epochs):
-        train_losses = train_one_epoch(model, optimizer, train_loader, device, epoch, args)
+    if start_epoch >= total_epochs:
+        print(f"Start epoch {start_epoch} is >= total epochs {total_epochs}; skipping training loop.")
+    for epoch_idx in range(start_epoch, total_epochs):
+        current_epoch = epoch_idx + 1
+        train_losses = train_one_epoch(model, optimizer, train_loader, device, current_epoch, args)
         lr_scheduler.step()
 
         # Validation evaluation (every epoch or every N epochs)
-        if val_loader is not None and (epoch + 1) % args.eval_interval == 0:
+        if val_loader is not None and current_epoch % args.eval_interval == 0:
             print(f"\n{'='*60}")
-            print(f"Validation @ Epoch {epoch+1}")
+            print(f"Validation @ Epoch {current_epoch}")
             print(f"{'='*60}")
             evaluate_coco(model, val_loader, device)
 
         # Save checkpoint
-        if (epoch + 1) % 5 == 0:
+        checkpoint_interval = getattr(args, "checkpoint_interval", 5)
+        if checkpoint_interval and current_epoch % checkpoint_interval == 0:
             torch.save({
-                'epoch': epoch,
+                'epoch': epoch_idx,
                 'model': model.state_dict(),
                 'optimizer': optimizer.state_dict(),
                 'args': args
-            }, output_dir / f'checkpoint_epoch_{epoch+1}.pth')
+            }, output_dir / f'checkpoint_epoch_{current_epoch}.pth')
 
     # Save final
     torch.save({
@@ -132,6 +140,9 @@ def train_combined(model, optimizer_param, scheduler_param, model_save_path,
         device: torch.device
         args: Training arguments
     """
+    start_epoch = max(0, getattr(args, "start_epoch", 0))
+    total_epochs = args.epochs
+
     params = [p for p in model.parameters() if p.requires_grad]
     optimizer = optim.SGD(params, **optimizer_param)
     lr_scheduler = optim.lr_scheduler.StepLR(optimizer, **scheduler_param)
@@ -147,7 +158,9 @@ def train_combined(model, optimizer_param, scheduler_param, model_save_path,
     print(f"Model variant: {model_variant}")
     if hasattr(args, "backbone"):
         print(f"Backbone: {args.backbone}")
-    print(f"Total epochs: {args.epochs}")
+    print(f"Total epochs: {total_epochs}")
+    if start_epoch > 0:
+        print(f"Resuming from epoch {start_epoch}")
     print(f"Train samples: {len(train_loader.dataset)}")
     print(f"Val Waymo samples: {len(val_waymo_loader.dataset)}")
     print(f"Val Nuscenes samples: {len(val_nuscenes_loader.dataset)}")
@@ -156,15 +169,18 @@ def train_combined(model, optimizer_param, scheduler_param, model_save_path,
     print(f"{'='*70}\n")
 
     # Training loop
-    for epoch in range(args.epochs):
+    if start_epoch >= total_epochs:
+        print(f"Start epoch {start_epoch} is >= total epochs {total_epochs}; skipping training loop.")
+    for epoch_idx in range(start_epoch, total_epochs):
+        current_epoch = epoch_idx + 1
         # Train one epoch on combined dataset
-        train_losses = train_one_epoch(model, optimizer, train_loader, device, epoch, args)
+        train_losses = train_one_epoch(model, optimizer, train_loader, device, current_epoch, args)
         lr_scheduler.step()
 
         # Validation on both datasets separately
-        if (epoch + 1) % args.eval_interval == 0:
+        if current_epoch % args.eval_interval == 0:
             print(f"\n{'='*70}")
-            print(f"Validation @ Epoch {epoch + 1}/{args.epochs}")
+            print(f"Validation @ Epoch {current_epoch}/{total_epochs}")
             print(f"{'='*70}")
 
             # Waymo validation
@@ -178,10 +194,10 @@ def train_combined(model, optimizer_param, scheduler_param, model_save_path,
             print(f"{'='*70}\n")
 
         # Save checkpoint
-        if (epoch + 1) % args.checkpoint_interval == 0:
-            checkpoint_path = output_dir / f'checkpoint_epoch_{epoch+1}.pth'
+        if current_epoch % args.checkpoint_interval == 0:
+            checkpoint_path = output_dir / f'checkpoint_epoch_{current_epoch}.pth'
             torch.save({
-                'epoch': epoch,
+                'epoch': epoch_idx,
                 'model': model.state_dict(),
                 'optimizer': optimizer.state_dict(),
                 'args': args
