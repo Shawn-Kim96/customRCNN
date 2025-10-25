@@ -1,6 +1,6 @@
 # Fdb version 4
-["pdflatex"] 1760989646.93011 "/Users/shawn/Documents/sjsu/2025-2/ia/customRCNN/reports/018219422_HW1.tex" "018219422_HW1.pdf" "018219422_HW1" 1760989650.12759 0
-  "/Users/shawn/Documents/sjsu/2025-2/ia/customRCNN/reports/018219422_HW1.tex" 1760989646.69433 17431 6e966a4f167768bfe303aaafaf90e778 ""
+["pdflatex"] 1761414762.08184 "/Users/shawn/Documents/sjsu/2025-2/ia/customRCNN/reports/018219422_HW1.tex" "018219422_HW1.pdf" "018219422_HW1" 1761414765.22122 0
+  "/Users/shawn/Documents/sjsu/2025-2/ia/customRCNN/reports/018219422_HW1.tex" 1761414761.87186 17677 0d145d80e5fa7741ef66583802ef0060 ""
   "/usr/local/texlive/2025/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc" 1136849721 2900 1537cc8184ad1792082cd229ecc269f4 ""
   "/usr/local/texlive/2025/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
   "/usr/local/texlive/2025/texmf-dist/fonts/tfm/jknappen/ec/tcrm1095.tfm" 1136768653 1536 02c06700a42be0f5a28664c7273f82e7 ""
@@ -23,6 +23,7 @@
   "/usr/local/texlive/2025/texmf-dist/fonts/tfm/public/cm/cmsy8.tfm" 1136768653 1120 8b7d695260f3cff42e636090a8002094 ""
   "/usr/local/texlive/2025/texmf-dist/fonts/tfm/public/cm/cmti10.tfm" 1136768653 1480 aa8e34af0eb6a2941b776984cf1dfdc4 ""
   "/usr/local/texlive/2025/texmf-dist/fonts/tfm/public/cm/cmtt10.tfm" 1136768653 768 1321e9409b4137d6fb428ac9dc956269 ""
+  "/usr/local/texlive/2025/texmf-dist/fonts/tfm/public/cm/cmtt12.tfm" 1136768653 772 9a936b7f5e2ff0557fce0f62822f0bbf ""
   "/usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb" 1248133631 34811 78b52f49e893bcba91bd7581cdc144c0 ""
   "/usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb" 1248133631 32080 340ef9bf63678554ee606688e7b5339d ""
   "/usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb" 1248133631 36299 5f9df58c2139e7edcf37c8fca4bd384d ""
@@ -35,6 +36,7 @@
   "/usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb" 1248133631 32626 4f5c1b83753b1dd3a97d1b399a005b4b ""
   "/usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmti10.pfb" 1248133631 37944 359e864bd06cde3b1cf57bb20757fb06 ""
   "/usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt10.pfb" 1248133631 31099 c85edf1dd5b9e826d67c9c7293b6786c ""
+  "/usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt12.pfb" 1248133631 24252 1e4e051947e12dfb50fee0b7f4e26e3a ""
   "/usr/local/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfrm1095.pfb" 1215737283 145929 f25e56369a345c4ff583b067cd87ce8e ""
   "/usr/local/texlive/2025/texmf-dist/tex/context/base/mkii/supp-pdf.mkii" 1461363279 71627 94eb9990bed73c364d7f53f960cc8c5b ""
   "/usr/local/texlive/2025/texmf-dist/tex/generic/atbegshi/atbegshi.sty" 1575674566 24708 5584a51a7101caf7e6bbf1fc27d8f7b1 ""
@@ -204,9 +206,9 @@
   "/usr/local/texlive/2025/texmf-var/fonts/map/pdftex/updmap/pdftex.map" 1758865512 5467155 19efa205003f9ecad95fbbaa6ff24da1 ""
   "/usr/local/texlive/2025/texmf-var/web2c/pdftex/pdflatex.fmt" 1758865495 3345739 c06d793a401695a3188abbede3557ec2 ""
   "/usr/local/texlive/2025/texmf.cnf" 1741450484 577 418a7058ec8e006d8704f60ecd22c938 ""
-  "018219422_HW1.aux" 1760989650.04962 5025 6d49256b789a281d17b738ab41192853 "pdflatex"
-  "018219422_HW1.out" 1760989650.05039 2881 a53437d5d8f1e6ed5a8c27b717566e64 "pdflatex"
-  "018219422_HW1.tex" 1760989646.69433 17431 6e966a4f167768bfe303aaafaf90e778 ""
+  "018219422_HW1.aux" 1761414765.14275 4942 4e084dc7ef716a9009c6ad3a4a86de70 "pdflatex"
+  "018219422_HW1.out" 1761414765.14378 2881 a53437d5d8f1e6ed5a8c27b717566e64 "pdflatex"
+  "018219422_HW1.tex" 1761414761.87186 17677 0d145d80e5fa7741ef66583802ef0060 ""
   "images/predictions/nuscenes_resnet_101_baseline.png" 1760936741.49751 1568580 d9fb73abb1bae6500d434acc01ae598e ""
   "images/predictions/nuscenes_swin_t_advanced.png" 1760936748.40846 1569094 d129973c342bfb0d36d6c4ba4bda6d9d ""
   "images/predictions/nuscenes_vit_b_16_advanced.png" 1760936746.85207 1565995 934c681a906efa12394b62cf3791610a ""

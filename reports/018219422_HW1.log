@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2025.9.25)  20 OCT 2025 12:47
+This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2025.9.25)  25 OCT 2025 10:52
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -655,121 +655,124 @@ Package microtype Info: Loading generic protrusion settings for font family
 
 {/usr/local/texlive/2025/texmf-var/fonts/map/pdftex/updmap/pdftex.map}]
 
-[2]
-Overfull \hbox (24.17316pt too wide) in paragraph at lines 51--52
-\OT1/cmr/m/n/10.95 (-20) which se-ri-al-izes TorchVi-sion weights for ViT/Swin/ResNet vari-ants into the \OT1/cmtt/m/n/10.95 data/pretrained[]models/
- []
-
-
-Overfull \hbox (9.2457pt too wide) in paragraph at lines 78--79
-\OT1/cmr/m/n/10.95 (-20) straight-for-ward. Check-points and fi-nal weights were stored un-der \OT1/cmtt/m/n/10.95 src/result/<model>/<config>/\OT1/cmr/m/n/10.95 (-20) . 
- []
-
-
-
-[3{/usr/local/texlive/2025/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc}
+[2{/usr/local/texlive/2025/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc}
 pdfTeX warning (ext4): destination with the same identifier (name{table.1}) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.82 
-     ]
-<images/training_loss_total.png, id=108, 570.933pt x 353.03896pt>
+l.77 \subsection
+                {Training Diagnostics}]
+<images/training_loss_total.png, id=105, 570.933pt x 353.03896pt>
 File: images/training_loss_total.png Graphic file (type png)
 <use images/training_loss_total.png>
-Package pdftex.def Info: images/training_loss_total.png  used on input line 97.
-(pdftex.def)             Requested size: 409.71692pt x 253.35826pt.
-
-Underfull \hbox (badness 10000) in paragraph at lines 97--97
-[]\OT1/cmr/m/n/10.95 (+20) Figure 1: []Total train-ing loss com-par-i-son across back-bones (ex-ported from
- []
-
-<images/training_loss_components.png, id=110, 709.33005pt x 472.6458pt>
+Package pdftex.def Info: images/training_loss_total.png  used on input line 94.
+(pdftex.def)             Requested size: 318.66948pt x 197.05942pt.
+<images/training_loss_components.png, id=107, 709.33005pt x 472.6458pt>
 File: images/training_loss_components.png Graphic file (type png)
 <use images/training_loss_components.png>
-Package pdftex.def Info: images/training_loss_components.png  used on input line 113.
+Package pdftex.def Info: images/training_loss_components.png  used on input line 110.
 (pdftex.def)             Requested size: 409.71692pt x 273.00967pt.
 
 
-[4
+[3
 pdfTeX warning (ext4): destination with the same identifier (name{figure.1}) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.114 
-       <./images/training_loss_total.png>]
-Package pgfplots info on input line 157: Using 'lua backend=false' for axis: x coord trafo unsupported.
-
-
-[5
+l.115 
+      
 pdfTeX warning (ext4): destination with the same identifier (name{figure.2}) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.167 
-      
-pdfTeX warning (ext4): destination with the same identifier (name{table.2}) has been already used, duplicate ignored
-<argument> ...shipout:D \box_use:N \l_shipout_box 
-                                                  \__shipout_drop_firstpage_...
-l.167 
-       <./images/training_loss_components.png>]
-<images/validation_metrics_grid.png, id=130, 860.013pt x 823.878pt>
+l.115 
+       <./images/training_loss_total.png> <./images/training_loss_components.png>]
+Package pgfplots info on input line 154: Using 'lua backend=false' for axis: x coord trafo unsupported.
+<images/validation_metrics_grid.png, id=118, 860.013pt x 823.878pt>
 File: images/validation_metrics_grid.png Graphic file (type png)
 <use images/validation_metrics_grid.png>
-Package pdftex.def Info: images/validation_metrics_grid.png  used on input line 185.
+Package pdftex.def Info: images/validation_metrics_grid.png  used on input line 182.
 (pdftex.def)             Requested size: 432.48051pt x 414.31398pt.
 
 
-[6
+[4
+pdfTeX warning (ext4): destination with the same identifier (name{table.2}) has been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.183 T
+       he validation curves in Figure~\ref{fig:validation-metrics} reveal th...
 pdfTeX warning (ext4): destination with the same identifier (name{figure.3}) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.186 
-      ]
-<images/predictions/waymo_resnet_101_baseline.png, id=137, 859.65166pt x 295.94565pt>
+l.183 T
+       he validation curves in Figure~\ref{fig:validation-metrics} reveal th...]
+<images/predictions/waymo_resnet_101_baseline.png, id=128, 859.65166pt x 295.94565pt>
 File: images/predictions/waymo_resnet_101_baseline.png Graphic file (type png)
 <use images/predictions/waymo_resnet_101_baseline.png>
-Package pdftex.def Info: images/predictions/waymo_resnet_101_baseline.png  used on input line 206.
-(pdftex.def)             Requested size: 145.68144pt x 50.15204pt.
-<images/predictions/waymo_vit_b_16_advanced.png, id=138, 859.65166pt x 295.94565pt>
+Package pdftex.def Info: images/predictions/waymo_resnet_101_baseline.png  used on input line 205.
+(pdftex.def)             Requested size: 455.24411pt x 156.724pt.
+<images/predictions/waymo_vit_b_16_advanced.png, id=129, 859.65166pt x 295.94565pt>
 File: images/predictions/waymo_vit_b_16_advanced.png Graphic file (type png)
 <use images/predictions/waymo_vit_b_16_advanced.png>
-Package pdftex.def Info: images/predictions/waymo_vit_b_16_advanced.png  used on input line 206.
-(pdftex.def)             Requested size: 145.68144pt x 50.15204pt.
-<images/predictions/waymo_swin_t_advanced.png, id=139, 859.65166pt x 295.94565pt>
+Package pdftex.def Info: images/predictions/waymo_vit_b_16_advanced.png  used on input line 205.
+(pdftex.def)             Requested size: 455.24411pt x 156.724pt.
+<images/predictions/waymo_swin_t_advanced.png, id=130, 859.65166pt x 295.94565pt>
 File: images/predictions/waymo_swin_t_advanced.png Graphic file (type png)
 <use images/predictions/waymo_swin_t_advanced.png>
-Package pdftex.def Info: images/predictions/waymo_swin_t_advanced.png  used on input line 206.
-(pdftex.def)             Requested size: 145.68144pt x 50.15204pt.
-<images/predictions/nuscenes_resnet_101_baseline.png, id=140, 857.8449pt x 234.1548pt>
-File: images/predictions/nuscenes_resnet_101_baseline.png Graphic file (type png)
-<use images/predictions/nuscenes_resnet_101_baseline.png>
-Package pdftex.def Info: images/predictions/nuscenes_resnet_101_baseline.png  used on input line 206.
-(pdftex.def)             Requested size: 145.68144pt x 39.76291pt.
-<images/predictions/nuscenes_vit_b_16_advanced.png, id=141, 857.8449pt x 234.1548pt>
-File: images/predictions/nuscenes_vit_b_16_advanced.png Graphic file (type png)
-<use images/predictions/nuscenes_vit_b_16_advanced.png>
-Package pdftex.def Info: images/predictions/nuscenes_vit_b_16_advanced.png  used on input line 206.
-(pdftex.def)             Requested size: 145.68144pt x 39.76291pt.
-<images/predictions/nuscenes_swin_t_advanced.png, id=142, 857.8449pt x 234.1548pt>
-File: images/predictions/nuscenes_swin_t_advanced.png Graphic file (type png)
-<use images/predictions/nuscenes_swin_t_advanced.png>
-Package pdftex.def Info: images/predictions/nuscenes_swin_t_advanced.png  used on input line 206.
-(pdftex.def)             Requested size: 145.68144pt x 39.76291pt.
+Package pdftex.def Info: images/predictions/waymo_swin_t_advanced.png  used on input line 205.
+(pdftex.def)             Requested size: 455.24411pt x 156.724pt.
 
 
-[7
+[5
 pdfTeX warning (ext4): destination with the same identifier (name{figure.4}) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.209 
-      
+l.205 
+       <./images/validation_metrics_grid.png>]
+<images/predictions/nuscenes_resnet_101_baseline.png, id=137, 857.8449pt x 234.1548pt>
+File: images/predictions/nuscenes_resnet_101_baseline.png Graphic file (type png)
+<use images/predictions/nuscenes_resnet_101_baseline.png>
+Package pdftex.def Info: images/predictions/nuscenes_resnet_101_baseline.png  used on input line 205.
+(pdftex.def)             Requested size: 500.77129pt x 136.69238pt.
+<images/predictions/nuscenes_vit_b_16_advanced.png, id=138, 857.8449pt x 234.1548pt>
+File: images/predictions/nuscenes_vit_b_16_advanced.png Graphic file (type png)
+<use images/predictions/nuscenes_vit_b_16_advanced.png>
+Package pdftex.def Info: images/predictions/nuscenes_vit_b_16_advanced.png  used on input line 205.
+(pdftex.def)             Requested size: 500.77129pt x 136.69238pt.
+<images/predictions/nuscenes_swin_t_advanced.png, id=139, 857.8449pt x 234.1548pt>
+File: images/predictions/nuscenes_swin_t_advanced.png Graphic file (type png)
+<use images/predictions/nuscenes_swin_t_advanced.png>
+Package pdftex.def Info: images/predictions/nuscenes_swin_t_advanced.png  used on input line 205.
+(pdftex.def)             Requested size: 500.77129pt x 136.69238pt.
+
+Overfull \hbox (45.52718pt too wide) in paragraph at lines 205--205
+ [][] 
+ []
+
+
+Overfull \hbox (45.52718pt too wide) in paragraph at lines 205--205
+ [] 
+ []
+
+
+Overfull \hbox (45.52718pt too wide) in paragraph at lines 205--205
+ [] 
+ []
+
+
+
+[6
 pdfTeX warning (ext4): destination with the same identifier (name{figure.5}) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.209 
-       <./images/validation_metrics_grid.png> <./images/predictions/waymo_resnet_101_baseline.png> <./images/predictions/waymo_vit_b_16_advanced.png> <./images/predictions/waymo_swin_t_advanced.png> <./images/predictions/nuscenes_resnet_101_baseline.png> <./images/predictions/nuscenes_vit_b_16_advanced.png> <./images/predictions/nuscenes_swin_t_advanced.png>]
+l.205 
+       <./images/predictions/waymo_resnet_101_baseline.png> <./images/predictions/waymo_vit_b_16_advanced.png> <./images/predictions/waymo_swin_t_advanced.png>]
 
-[8]
+[7
+pdfTeX warning (ext4): destination with the same identifier (name{figure.6}) has been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.215 \textbf{Swin-T.}
+                       Now sits between the two baselines: it lags ResNet-10... <./images/predictions/nuscenes_resnet_101_baseline.png> <./images/predictions/nuscenes_vit_b_16_advanced.png> <./images/predictions/nuscenes_swin_t_advanced.png>]
 
-[9] (./018219422_HW1.aux)
+[8] (./018219422_HW1.aux)
  ***********
 LaTeX2e <2024-11-01> patch level 2
 L3 programming layer <2025-01-18>
@@ -778,26 +781,18 @@ Package rerunfilecheck Info: File `018219422_HW1.out' has not changed.
 (rerunfilecheck)             Checksum: A53437D5D8F1E6ED5A8C27B717566E64;2881.
  ) 
 Here is how much of TeX's memory you used:
- 33008 strings out of 473190
- 770343 string characters out of 5715800
- 1282607 words of memory out of 5000000
- 55646 multiletter control sequences out of 15000+600000
- 568528 words of font info for 111 fonts, out of 8000000 for 9000
+ 33016 strings out of 473190
+ 770450 string characters out of 5715800
+ 1286167 words of memory out of 5000000
+ 55649 multiletter control sequences out of 15000+600000
+ 568799 words of font info for 114 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
  99i,19n,105p,1067b,2334s stack positions out of 10000i,1000n,20000p,200000b,200000s
-</usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr17.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmti10.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt10.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfrm1095.pfb>
-Output written on 018219422_HW1.pdf (9 pages, 15737435 bytes).
+</usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr17.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmti10.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt10.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt12.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfrm1095.pfb>
+Output written on 018219422_HW1.pdf (8 pages, 15743511 bytes).
 PDF statistics:
- 242 PDF objects out of 1000 (max. 8388607)
- 185 compressed objects within 2 object streams
+ 244 PDF objects out of 1000 (max. 8388607)
+ 186 compressed objects within 2 object streams
  40 named destinations out of 1000 (max. 500000)
- 23242 words of extra memory for PDF output out of 24883 (max. 10000000)
-
-/amsfonts/cm/cmmi8.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr17.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmti10.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt10.pfb></usr/local/texlive/2025/texmf-dist/fonts/type1/public/cm-super/sfrm1095.pfb>
-Output written on 018219422_HW1.pdf (9 pages, 15737260 bytes).
-PDF statistics:
- 232 PDF objects out of 1000 (max. 8388607)
- 175 compressed objects within 2 object streams
- 40 named destinations out of 1000 (max. 500000)
- 23242 words of extra memory for PDF output out of 24883 (max. 10000000)
+ 23754 words of extra memory for PDF output out of 24883 (max. 10000000)
 
