@@ -154,10 +154,12 @@ logs
 .vscode
 .vscode/settings.json
 
+DeepDataMiningLearning/bevdet/bevfusion/ops
 docs/source/autonomous_survey_slides.md
 tmp_*
 */tmp_*
 *.tex
+<<<<<<< HEAD
 
 # Created by https://www.toptal.com/developers/gitignore/api/macos,visualstudiocode
 # Edit at https://www.toptal.com/developers/gitignore?templates=macos,visualstudiocode
@@ -215,3 +217,7 @@ Temporary Items
 .ionide
 
 # End of https://www.toptal.com/developers/gitignore/api/macos,visualstudiocode
+=======
+outputs/
+wandb
+>>>>>>> upstream/main

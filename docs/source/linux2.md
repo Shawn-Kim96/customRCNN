@@ -100,6 +100,43 @@ pip install matplotlib
 pip install opencv-python
 ```
 
+```bash
+$ conda create --name py310 python=3.10 -y
+conda activate py310
+(py310) lkk688@newalienware:~/Developer/DeepDataMiningLearning$ nvcc -V
+nvcc: NVIDIA (R) Cuda compiler driver
+Copyright (c) 2005-2025 NVIDIA Corporation
+Built on Fri_Feb_21_20:23:50_PST_2025
+Cuda compilation tools, release 12.8, V12.8.93
+Build cuda_12.8.r12.8/compiler.35583870_0
+$ pip3 install torch torchvision
+pip install -U openmim
+mim install mmengine
+mim install 'mmcv>=2.0.0rc4'
+mim install 'mmdet>=3.0.0'
+mim uninstall 'mmdet>=3.0.0'
+mim install mmdet
+$ git clone https://github.com/open-mmlab/mmdetection3d.git
+(py310) lkk688@newalienware:~/Developer/mmdetection3d$ pip install -v -e .
+$ mim install "mmcv==2.1.0"
+
+#new setup
+pip install -U openmim
+mim install mmengine
+mim install 'mmcv<2.2.0,>=2.0.0rc4'
+Successfully installed mmcv-2.1.0
+mim install 'mmdet>=3.0.0'
+(py310) lkk688@newalienware:~/Developer/mmdetection3d$ pip install -v -e .
+>>> import mmdet3d
+>>> print(mmdet3d.__version__)
+1.4.0
+>>> import mmdet
+>>> print(mmdet.__version__)
+3.3.0
+pip uninstall numpy
+pip install 'numpy<2'
+```
+
 # 5090 Setup
 Install the recommended driver: This is the best approach as ubuntu-drivers automatically uses DKMS to build the module and handle the MOK enrollment process.
 ```bash

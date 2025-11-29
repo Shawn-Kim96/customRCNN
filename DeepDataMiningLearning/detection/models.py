@@ -6,6 +6,7 @@ from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 from torchvision.models.detection import FasterRCNN
 from torchvision.models.detection.rpn import AnchorGenerator
 from DeepDataMiningLearning.detection.modules.yolomodels import create_yolomodel, freeze_yolomodel
+from DeepDataMiningLearning.detection.modeling_yolo import TorchvisionYoloModel
 #from DeepDataMiningLearning.detection.modeling_rpnfasterrcnn import CustomRCNN
 import os
 from DeepDataMiningLearning.detection.modeling_rpnfasterrcnn import CustomRCNN
@@ -191,18 +192,20 @@ def load_checkpoint(model, ckpt_file, fp16=False):
     model.half() if fp16 else model.float()
     return model
 
-def create_detectionmodel(modelname, num_classes=None, trainable_layers=0, ckpt_file = None, fp16=False, device= 'cuda:0', scale='n'):
+def create_detectionmodel(modelname, num_classes=None, nocustomize=False, trainable_layers=0, cfg_file = None, ckpt_file = None, fp16=False, device= 'cuda:0', scale='n'):
     model = None
     preprocess = None
     classes = None
+    freezemodel = False
     if trainable_layers==0:
         freezemodel = True
     if modelname == 'fasterrcnn_resnet50_fpn_v2':
         model, preprocess, weights, classes = get_torchvision_detection_models(modelname)
-        if num_classes is not None and len(classes) != num_classes:
+        if num_classes is not None and len(classes) != num_classes and (nocustomize is not True):
             model = modify_fasterrcnnheader(model, num_classes, freeze=freezemodel)
         if ckpt_file:
             model = load_checkpoint(model, ckpt_file, fp16)
+        model.to(device)
     elif modelname.startswith('customrcnn'):
         x = modelname.split("_")
         if x[0]== 'customrcnn' and x[1].startswith('resnet'):
@@ -212,10 +215,18 @@ def create_detectionmodel(modelname, num_classes=None, trainable_layers=0, ckpt_
                 model = load_checkpoint(model, ckpt_file, fp16)
         else:
             print("Model name not supported")
-    elif modelname.startswith('yolo') or 'yolo' in modelname.lower():
+        model.to(device)
+    elif modelname.startswith('yolo'):
         model, preprocess, classes=create_yolomodel(modelname, num_classes, ckpt_file, fp16, device, scale)
         model= freeze_yolomodel(model, freeze=[])
         #ckpt file is already loaded in create_yolomodel
+    elif modelname.startswith('torchvisionyolo'):
+        if nocustomize is True or num_classes is None:
+            model = TorchvisionYoloModel(model_name="yolov8", scale=scale, num_classes=80, device=device)
+        else: #default option is to customize the header
+            model = TorchvisionYoloModel(model_name="yolov8", scale=scale, num_classes=num_classes, device=device)
+        preprocess = None  # TorchvisionYoloModel handles preprocessing internally
+        classes = None     # Uses COCO classes by default
     else:
         print('Model name not supported')
 
