@@ -1,5 +1,9 @@
-src/result/**/*.pth
+custom_rcnn/result/**/*.pth
 
+3d_detection/cache/
+3d_detection/checkpoints/
+3d_detection/data_nuscenes
+3d_detection/data_waymo_kitti/
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

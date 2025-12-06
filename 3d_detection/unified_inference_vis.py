@@ -1,18 +1,3 @@
-#!/usr/bin/env python3
-"""
-Unified 3D Detection Inference, Saving, and Visualization Script
-
-This script provides a complete solution for:
-1. Running inference on multiple datasets (Waymo, nuScenes) with multiple models
-2. Saving outputs: .png frames, .ply point clouds with predictions, .json metadata
-3. Creating demo videos from frames
-4. Open3D visualization support
-5. Performance metrics calculation
-
-Author: Assignment Solution
-Date: 2025
-"""
-
 import os
 import sys
 import argparse
@@ -31,7 +16,6 @@ from mmdet3d.structures import Det3DDataSample
 from mmdet3d.registry import DATASETS
 import mmcv
 import open3d as o3d
-OPEN3D_AVAILABLE = True
 
 try:
     from mmengine.config import Config
