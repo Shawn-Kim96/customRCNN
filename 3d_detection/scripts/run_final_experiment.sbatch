@@ -16,8 +16,8 @@ echo "==========================================================================
 echo "Job ID: ${SLURM_JOB_ID}"
 echo "Node: ${SLURM_NODELIST}"
 echo "GPU: ${CUDA_VISIBLE_DEVICES}"
-echo "Waymo: ALL samples (~794)"
-echo "nuScenes: 500 samples"
+echo "Waymo: 794 samples (training, with GT for mAP)"
+echo "nuScenes: 500 samples (with GT)"
 echo "Start time: $(date)"
 echo "================================================================================"
 echo ""
@@ -43,10 +43,10 @@ fi
 echo ""
 
 # Count samples
-WAYMO_COUNT=$(find data_waymo_kitti/kitti_format/testing/velodyne/ -name "*.bin" 2>/dev/null | wc -l || echo 0)
+WAYMO_TRAIN_COUNT=$(find data_waymo_kitti/kitti_format/training/velodyne/ -name "*.bin" 2>/dev/null | wc -l || echo 0)
 echo "[3/5] Dataset information:"
-echo "  Waymo samples: ${WAYMO_COUNT} (processing all)"
-echo "  nuScenes samples: 500 (out of ~36,737)"
+echo "  Waymo training samples: ${WAYMO_TRAIN_COUNT} (processing first 794 for mAP)"
+echo "  nuScenes samples: 500 (out of ~36,737, with GT)"
 echo ""
 
 # Set output directories
@@ -62,8 +62,8 @@ echo ""
 # Run inference on both datasets
 # ============================================================================
 echo "[4/5] Running inference on both datasets..."
-echo "  Waymo: ALL samples (~794)"
-echo "  nuScenes: 500 samples"
+echo "  Waymo: 794 samples (training split for GT)"
+echo "  nuScenes: 500 samples (train/val with GT)"
 echo ""
 
 python unified_inference_vis.py \
@@ -74,9 +74,10 @@ python unified_inference_vis.py \
   --nuscenes-config checkpoints/centerpoint_voxel01_second_secfpn_head-circlenms_8xb4-cyclic-20e_nus-3d.py \
   --nuscenes-checkpoint checkpoints/centerpoint_01voxel_second_secfpn_circlenms_4x8_cyclic_20e_nus_20220810_030004-9061688e.pth \
   --output-dir ${OUTPUT_DIR} \
-  --waymo-samples 0 \
+  --waymo-samples 794 \
   --nuscenes-samples 500 \
   --device cuda:0 \
+  --require-gt \
   --save-ply \
   --save-vis \
   --create-video \
@@ -125,8 +126,12 @@ echo "  - PLY files: ${NUSCENES_PLY}"
 echo "  - Video: ${OUTPUT_DIR}/nuscenes_centerpoint/demo_nuscenes.mp4"
 echo ""
 echo "Analysis:"
-echo "  - Report: ${ANALYSIS_DIR}/analysis_report.txt"
-echo "  - Table: ${ANALYSIS_DIR}/comparison_table.csv"
-echo "  - Plot: ${ANALYSIS_DIR}/performance_comparison.png"
+echo "  - Report (Markdown): ${ANALYSIS_DIR}/analysis_report.md"
+echo "  - Table (CSV): ${ANALYSIS_DIR}/comparison_table.csv"
+echo "  - Plot (PNG): ${ANALYSIS_DIR}/performance_comparison.png"
+echo ""
+echo "View the report with:"
+echo "  cat ${ANALYSIS_DIR}/analysis_report.md"
+echo "  # Or open in a markdown viewer"
 echo ""
 echo "================================================================================"
