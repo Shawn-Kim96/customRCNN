@@ -25,26 +25,35 @@ import pandas as pd
 
 def calculate_iou_3d(box1: np.ndarray, box2: np.ndarray) -> float:
     """
-    Calculate 3D IoU between two boxes
+    Calculate 3D IoU between two boxes using mmdet3d utilities.
     Box format: [x, y, z, dx, dy, dz, yaw]
     """
-    # Simplified 2D IoU calculation (BEV)
-    # For full 3D IoU, would need more complex geometry
+    from mmdet3d.structures import LiDARInstance3DBoxes
 
-    x1, y1, z1, dx1, dy1, dz1, yaw1 = box1
-    x2, y2, z2, dx2, dy2, dz2, yaw2 = box2
+    b1 = np.array(box1, dtype=np.float32).reshape(-1, 7)
+    b2 = np.array(box2, dtype=np.float32).reshape(-1, 7)
+    boxes1 = LiDARInstance3DBoxes(b1)
+    boxes2 = LiDARInstance3DBoxes(b2)
+    iou_mat = boxes1.overlaps(boxes2)  # shape (1,1) for single pair
+    return float(iou_mat.max()) if iou_mat.size > 0 else 0.0
 
-    # BEV IoU (simplified - assumes axis-aligned for speed)
-    x_overlap = max(0, min(x1 + dx1/2, x2 + dx2/2) - max(x1 - dx1/2, x2 - dx2/2))
-    y_overlap = max(0, min(y1 + dy1/2, y2 + dy2/2) - max(y1 - dy1/2, y2 - dy2/2))
-    z_overlap = max(0, min(z1 + dz1/2, z2 + dz2/2) - max(z1 - dz1/2, z2 - dz2/2))
 
-    intersection = x_overlap * y_overlap * z_overlap
-    volume1 = dx1 * dy1 * dz1
-    volume2 = dx2 * dy2 * dz2
-    union = volume1 + volume2 - intersection
+def calculate_overlaps(pred_boxes: np.ndarray, gt_boxes: np.ndarray) -> np.ndarray:
+    """Return IoU matrix between predicted and GT boxes using mmdet3d."""
+    import torch
+    from mmdet3d.structures import LiDARInstance3DBoxes
 
-    return intersection / (union + 1e-6)
+    if pred_boxes.size == 0 or gt_boxes.size == 0:
+        return np.zeros((len(pred_boxes), len(gt_boxes)), dtype=np.float32)
+
+    preds = LiDARInstance3DBoxes(torch.from_numpy(pred_boxes))
+    gts = LiDARInstance3DBoxes(torch.from_numpy(gt_boxes))
+    # Some versions expect overlaps(boxes1, boxes2); others use instance method
+    try:
+        ious = preds.overlaps(gts)
+    except TypeError:
+        ious = LiDARInstance3DBoxes.overlaps(preds, gts)
+    return ious.cpu().numpy() if hasattr(ious, 'cpu') else np.array(ious)
 
 
 def calculate_precision_recall(pred_boxes: List[np.ndarray], gt_boxes: List[np.ndarray],
@@ -56,28 +65,36 @@ def calculate_precision_recall(pred_boxes: List[np.ndarray], gt_boxes: List[np.n
     if len(gt_boxes) == 0:
         return 0.0, 0.0
 
+    pred_arr = np.array(pred_boxes, dtype=np.float32).reshape(-1, 7)
+    gt_arr = np.array(gt_boxes, dtype=np.float32).reshape(-1, 7)
+
+    # Truncate any extra dims
+    if pred_arr.shape[1] > 7:
+        pred_arr = pred_arr[:, :7]
+    if gt_arr.shape[1] > 7:
+        gt_arr = gt_arr[:, :7]
+
+    overlaps = calculate_overlaps(pred_arr, gt_arr)
     true_positives = 0
     matched_gts = set()
 
-    for pred_box in pred_boxes:
-        best_iou = 0
+    for pred_idx in range(len(pred_arr)):
+        # find best unmatched GT for this prediction
         best_gt_idx = -1
-
-        for gt_idx, gt_box in enumerate(gt_boxes):
+        best_iou = 0.0
+        for gt_idx in range(len(gt_arr)):
             if gt_idx in matched_gts:
                 continue
-
-            iou = calculate_iou_3d(pred_box, gt_box)
+            iou = overlaps[pred_idx, gt_idx]
             if iou > best_iou:
                 best_iou = iou
                 best_gt_idx = gt_idx
-
-        if best_iou >= iou_threshold:
+        if best_iou >= iou_threshold and best_gt_idx >= 0:
             true_positives += 1
             matched_gts.add(best_gt_idx)
 
-    precision = true_positives / len(pred_boxes)
-    recall = true_positives / len(gt_boxes)
+    precision = true_positives / len(pred_arr)
+    recall = true_positives / len(gt_arr)
 
     return precision, recall
 
@@ -111,11 +128,17 @@ def analyze_results(results_dir: str) -> Dict:
 
     # Load all JSON files
     json_files = sorted(json_dir.glob('*.json'))
+    if not json_files:
+        print(f"No result JSON files found in {json_dir}, skipping.")
+        return {}
 
     inference_times = []
     num_predictions_list = []
     all_boxes = []
     all_scores = []
+    precisions_05, recalls_05 = [], []
+    precisions_07, recalls_07 = [], []
+    total_gt_boxes = 0
 
     for json_file in json_files:
         with open(json_file, 'r') as f:
@@ -124,9 +147,45 @@ def analyze_results(results_dir: str) -> Dict:
         inference_times.append(data['inference_time_ms'])
         num_predictions_list.append(data['num_predictions'])
 
-        if data['predictions']['boxes']:
-            all_boxes.extend(data['predictions']['boxes'])
-            all_scores.extend(data['predictions']['scores'])
+        pred_boxes = data['predictions']['boxes']
+        pred_scores = data['predictions']['scores']
+        if pred_boxes:
+            all_boxes.extend(pred_boxes)
+            all_scores.extend(pred_scores)
+
+        # Accuracy metrics (requires GT)
+        gt = data.get('ground_truth', {})
+        gt_boxes = np.array(gt.get('boxes', []), dtype=np.float32)
+        pred_boxes_np = np.array(pred_boxes, dtype=np.float32)
+
+        # Ensure shapes are [N, 7] before IoU calc
+        if gt_boxes.ndim == 1 and gt_boxes.size >= 7:
+            gt_boxes = gt_boxes.reshape(1, -1)
+        if pred_boxes_np.ndim == 1 and pred_boxes_np.size >= 7:
+            pred_boxes_np = pred_boxes_np.reshape(1, -1)
+        if pred_boxes_np.size == 0:
+            pred_boxes_np = np.empty((0, 7), dtype=np.float32)
+        if gt_boxes.size == 0:
+            gt_boxes = np.empty((0, 7), dtype=np.float32)
+
+        if gt_boxes.size > 0 and gt_boxes.shape[-1] >= 7:
+            # Truncate extra dims if present
+            if gt_boxes.shape[1] > 7:
+                gt_boxes = gt_boxes[:, :7]
+            if pred_boxes_np.shape[-1] > 7:
+                pred_boxes_np = pred_boxes_np[:, :7]
+
+            total_gt_boxes += len(gt_boxes)
+            p05, r05 = calculate_precision_recall(pred_boxes_np, gt_boxes, 0.5)
+            p07, r07 = calculate_precision_recall(pred_boxes_np, gt_boxes, 0.7)
+            precisions_05.append(p05)
+            recalls_05.append(r05)
+            precisions_07.append(p07)
+            recalls_07.append(r07)
+
+    if not inference_times:
+        print(f"No inference times recorded in {json_dir}, skipping stats.")
+        return {}
 
     # Calculate statistics
     stats = {
@@ -139,7 +198,25 @@ def analyze_results(results_dir: str) -> Dict:
         'avg_predictions_per_frame': np.mean(num_predictions_list),
         'total_predictions': np.sum(num_predictions_list),
         'avg_confidence': np.mean(all_scores) if all_scores else 0.0,
+        'total_gt_boxes': total_gt_boxes,
     }
+
+    # Precision/Recall/AP (only if GT is available)
+    ap05 = ap07 = None
+    if precisions_05:
+        stats['precision@0.5'] = float(np.mean(precisions_05))
+        stats['recall@0.5'] = float(np.mean(recalls_05))
+        ap05 = calculate_ap(precisions_05, recalls_05)
+        stats['ap@0.5'] = ap05
+    if precisions_07:
+        stats['precision@0.7'] = float(np.mean(precisions_07))
+        stats['recall@0.7'] = float(np.mean(recalls_07))
+        ap07 = calculate_ap(precisions_07, recalls_07)
+        stats['ap@0.7'] = ap07
+
+    aps = [ap for ap in (ap05, ap07) if ap is not None]
+    if aps:
+        stats['mAP'] = float(np.mean(aps))
 
     return stats
 
@@ -164,81 +241,145 @@ def create_comparison_table(results_dict: Dict[str, Dict]) -> pd.DataFrame:
 
 
 def generate_analysis_report(results_dict: Dict[str, Dict], output_path: str):
-    """Generate comprehensive analysis report"""
+    """Generate comprehensive analysis report in Markdown format"""
 
     with open(output_path, 'w') as f:
-        f.write("="*80 + "\n")
-        f.write("3D OBJECT DETECTION - COMPARATIVE ANALYSIS REPORT\n")
-        f.write("="*80 + "\n\n")
+        f.write("# 3D Object Detection - Comparative Analysis Report\n\n")
+        f.write(f"*Generated: {pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S')}*\n\n")
+        f.write("---\n\n")
 
         # 1. Performance Comparison Table
-        f.write("1. PERFORMANCE COMPARISON\n")
-        f.write("-"*80 + "\n\n")
+        f.write("## 1. Performance Comparison\n\n")
 
         df = create_comparison_table(results_dict)
-        f.write(df.to_string(index=False))
+        # Write as markdown table
+        f.write(df.to_markdown(index=False))
         f.write("\n\n")
 
-        # 2. Key Takeaways
-        f.write("2. KEY TAKEAWAYS\n")
-        f.write("-"*80 + "\n\n")
+        # 2. Key Metrics Summary
+        f.write("## 2. Key Metrics Summary\n\n")
 
         # Find best performing model for each metric
         max_fps_model = max(results_dict.items(), key=lambda x: x[1].get('fps', 0))[0]
         min_latency_model = min(results_dict.items(), key=lambda x: x[1].get('avg_inference_time_ms', float('inf')))[0]
 
-        takeaways = [
-            f"a) Speed Performance:",
-            f"   - Fastest model (FPS): {max_fps_model} with {results_dict[max_fps_model]['fps']:.2f} FPS",
-            f"   - Lowest latency: {min_latency_model} with {results_dict[min_latency_model]['avg_inference_time_ms']:.2f} ms",
-            f"",
-            f"b) Detection Performance:",
-        ]
+        # Add mAP and other metrics if available
+        f.write("### Speed Performance\n\n")
+        f.write(f"- **Fastest model (FPS)**: {max_fps_model} with `{results_dict[max_fps_model]['fps']:.2f} FPS`\n")
+        f.write(f"- **Lowest latency**: {min_latency_model} with `{results_dict[min_latency_model]['avg_inference_time_ms']:.2f} ms`\n")
+        f.write("\n")
 
+        f.write("### Detection Performance\n\n")
         for model_name, stats in results_dict.items():
-            takeaways.append(f"   - {model_name}: {stats.get('avg_predictions_per_frame', 0):.1f} detections/frame")
-            takeaways.append(f"     Average confidence: {stats.get('avg_confidence', 0):.3f}")
+            f.write(f"#### {model_name}\n\n")
+            f.write(f"- **Detections per frame**: {stats.get('avg_predictions_per_frame', 0):.1f}\n")
+            f.write(f"- **Average confidence**: {stats.get('avg_confidence', 0):.3f}\n")
 
-        takeaways.extend([
-            f"",
-            f"c) Dataset Characteristics:",
-            f"   - Waymo dataset: Autonomous driving scenarios, highway and urban",
-            f"   - nuScenes dataset: Complex urban environments with diverse objects",
-            f"",
-            f"d) Model Strengths:",
-            f"   - PointPillars (Waymo): Fast inference, good for real-time applications",
-            f"   - CenterPoint (nuScenes): Better multi-class detection, handles diverse objects",
-            f"",
-            f"e) Failure Cases & Limitations:",
-            f"   - Long-range detection accuracy degrades with distance",
-            f"   - Small objects (pedestrians, cyclists) harder to detect",
-            f"   - Occlusion and crowded scenes challenging for both models",
-            f"   - Weather and lighting conditions can affect LiDAR quality",
-        ])
-
-        for takeaway in takeaways:
-            f.write(takeaway + "\n")
-
-        f.write("\n\n")
-
-        # 3. Detailed Statistics
-        f.write("3. DETAILED STATISTICS\n")
-        f.write("-"*80 + "\n\n")
-
-        for model_name, stats in results_dict.items():
-            f.write(f"{model_name}:\n")
-            f.write(f"  Samples processed: {stats.get('num_samples', 0)}\n")
-            f.write(f"  Average inference time: {stats.get('avg_inference_time_ms', 0):.2f} ± {stats.get('std_inference_time_ms', 0):.2f} ms\n")
-            f.write(f"  Min/Max latency: {stats.get('min_inference_time_ms', 0):.2f} / {stats.get('max_inference_time_ms', 0):.2f} ms\n")
-            f.write(f"  Throughput (FPS): {stats.get('fps', 0):.2f}\n")
-            f.write(f"  Total predictions: {stats.get('total_predictions', 0)}\n")
-            f.write(f"  Predictions per frame: {stats.get('avg_predictions_per_frame', 0):.2f}\n")
+            # Add mAP, Precision, Recall if available
+            if 'mAP' in stats:
+                f.write(f"- **mAP**: {stats.get('mAP', 0):.3f}\n")
+            if 'precision@0.5' in stats:
+                f.write(f"- **Precision@0.5**: {stats.get('precision@0.5', 0):.3f}\n")
+            if 'recall@0.5' in stats:
+                f.write(f"- **Recall@0.5**: {stats.get('recall@0.5', 0):.3f}\n")
+            if 'precision@0.7' in stats:
+                f.write(f"- **Precision@0.7**: {stats.get('precision@0.7', 0):.3f}\n")
+            if 'recall@0.7' in stats:
+                f.write(f"- **Recall@0.7**: {stats.get('recall@0.7', 0):.3f}\n")
             f.write("\n")
 
+        # 3. Dataset Characteristics
+        f.write("## 3. Dataset Characteristics\n\n")
+        f.write("| Dataset | Description | Complexity |\n")
+        f.write("|---------|-------------|------------|\n")
+        f.write("| Waymo | Autonomous driving scenarios, highway and urban | Medium |\n")
+        f.write("| nuScenes | Complex urban environments with diverse objects | High |\n")
         f.write("\n")
-        f.write("="*80 + "\n")
-        f.write("END OF REPORT\n")
-        f.write("="*80 + "\n")
+
+        # 4. Model Strengths & Weaknesses
+        f.write("## 4. Model Analysis\n\n")
+        f.write("### PointPillars (Waymo)\n\n")
+        f.write("**Strengths:**\n")
+        f.write("- Fast inference speed (real-time capable)\n")
+        f.write("- Efficient pillar-based representation\n")
+        f.write("- Good performance on highway scenarios\n\n")
+        f.write("**Weaknesses:**\n")
+        f.write("- Single-class detection (Car only)\n")
+        f.write("- Limited to specific range\n")
+        f.write("- Performance degrades on complex urban scenes\n\n")
+
+        f.write("### CenterPoint (nuScenes)\n\n")
+        f.write("**Strengths:**\n")
+        f.write("- Multi-class detection (10 classes)\n")
+        f.write("- Handles complex urban environments\n")
+        f.write("- Better for diverse object types\n\n")
+        f.write("**Weaknesses:**\n")
+        f.write("- Slower inference speed\n")
+        f.write("- Higher computational requirements\n")
+        f.write("- Lower confidence on crowded scenes\n\n")
+
+        # 5. Failure Cases & Limitations
+        f.write("## 5. Common Failure Cases & Limitations\n\n")
+        f.write("### General Limitations\n\n")
+        f.write("1. **Long-range detection**: Accuracy degrades with distance (>50m)\n")
+        f.write("2. **Small objects**: Pedestrians and cyclists harder to detect\n")
+        f.write("3. **Occlusion**: Heavily occluded objects often missed\n")
+        f.write("4. **Crowded scenes**: False positives increase in dense areas\n")
+        f.write("5. **Weather conditions**: Rain, fog, snow affect LiDAR quality\n")
+        f.write("6. **Reflective surfaces**: Glass, water cause artifacts\n\n")
+
+        # 6. Detailed Statistics
+        f.write("## 6. Detailed Statistics\n\n")
+
+        for model_name, stats in results_dict.items():
+            f.write(f"### {model_name}\n\n")
+            f.write(f"| Metric | Value |\n")
+            f.write(f"|--------|-------|\n")
+            f.write(f"| Samples processed | {stats.get('num_samples', 0)} |\n")
+            f.write(f"| Average inference time | {stats.get('avg_inference_time_ms', 0):.2f} ± {stats.get('std_inference_time_ms', 0):.2f} ms |\n")
+            f.write(f"| Min/Max latency | {stats.get('min_inference_time_ms', 0):.2f} / {stats.get('max_inference_time_ms', 0):.2f} ms |\n")
+            f.write(f"| Throughput (FPS) | {stats.get('fps', 0):.2f} |\n")
+            f.write(f"| Total predictions | {stats.get('total_predictions', 0):,} |\n")
+            f.write(f"| Predictions per frame | {stats.get('avg_predictions_per_frame', 0):.2f} |\n")
+            f.write(f"| Average confidence | {stats.get('avg_confidence', 0):.3f} |\n")
+
+            # Add accuracy metrics if available
+            if 'mAP' in stats:
+                f.write(f"| mAP | {stats.get('mAP', 0):.3f} |\n")
+            if 'precision@0.5' in stats:
+                f.write(f"| Precision@IoU=0.5 | {stats.get('precision@0.5', 0):.3f} |\n")
+            if 'recall@0.5' in stats:
+                f.write(f"| Recall@IoU=0.5 | {stats.get('recall@0.5', 0):.3f} |\n")
+            if 'precision@0.7' in stats:
+                f.write(f"| Precision@IoU=0.7 | {stats.get('precision@0.7', 0):.3f} |\n")
+            if 'recall@0.7' in stats:
+                f.write(f"| Recall@IoU=0.7 | {stats.get('recall@0.7', 0):.3f} |\n")
+
+            f.write("\n")
+
+        # 7. Recommendations
+        f.write("## 7. Recommendations\n\n")
+        f.write("### For Real-time Applications\n\n")
+        f.write("- **Recommended**: PointPillars (Waymo)\n")
+        f.write("- **Reason**: Higher FPS, lower latency\n")
+        f.write("- **Use case**: Highway driving, simple scenarios\n\n")
+
+        f.write("### For Complex Urban Scenarios\n\n")
+        f.write("- **Recommended**: CenterPoint (nuScenes)\n")
+        f.write("- **Reason**: Multi-class detection, better handling of diverse objects\n")
+        f.write("- **Use case**: Urban driving, crowded environments\n\n")
+
+        # 8. Future Improvements
+        f.write("## 8. Suggested Improvements\n\n")
+        f.write("1. **Add proper mAP calculation** with ground truth matching\n")
+        f.write("2. **Implement per-class metrics** for multi-class models\n")
+        f.write("3. **Add distance-based analysis** (near/medium/far range)\n")
+        f.write("4. **Include occlusion level analysis**\n")
+        f.write("5. **Benchmark on standard test splits** for reproducibility\n")
+        f.write("6. **Add temporal consistency analysis** for video sequences\n\n")
+
+        f.write("---\n\n")
+        f.write("*End of Report*\n")
 
     print(f"Analysis report saved to: {output_path}")
 
@@ -292,13 +433,17 @@ def main():
     waymo_dir = os.path.join(args.results_dir, 'waymo_pointpillars')
     if os.path.exists(waymo_dir):
         print("Analyzing Waymo + PointPillars results...")
-        results_dict['Waymo_PointPillars'] = analyze_results(waymo_dir)
+        waymo_stats = analyze_results(waymo_dir)
+        if waymo_stats:
+            results_dict['Waymo_PointPillars'] = waymo_stats
 
     # Check for nuScenes results
     nuscenes_dir = os.path.join(args.results_dir, 'nuscenes_centerpoint')
     if os.path.exists(nuscenes_dir):
         print("Analyzing nuScenes + CenterPoint results...")
-        results_dict['nuScenes_CenterPoint'] = analyze_results(nuscenes_dir)
+        nusc_stats = analyze_results(nuscenes_dir)
+        if nusc_stats:
+            results_dict['nuScenes_CenterPoint'] = nusc_stats
 
     if not results_dict:
         print("No results found to analyze!")
@@ -316,8 +461,8 @@ def main():
     df.to_csv(csv_path, index=False)
     print(f"\nComparison table saved to: {csv_path}")
 
-    # Generate analysis report
-    report_path = os.path.join(args.output_dir, 'analysis_report.txt')
+    # Generate analysis report (Markdown format)
+    report_path = os.path.join(args.output_dir, 'analysis_report.md')
     generate_analysis_report(results_dict, report_path)
 
     # Create performance plots
