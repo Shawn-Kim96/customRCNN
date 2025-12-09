@@ -1,5 +1,8 @@
 # 3D Object Detection Assignment - Complete Solution
 
+Final report including matrixs are `report.md`. This document is just for showing how to execute the code.
+
+
 ## Quick start
 In hpc environment (018219422), simply run
 ```
@@ -7,6 +10,7 @@ cd /home/018219422/customRCNN/3d_detection
 conda activate det3d310
 sbatch scripts/run_final_experiment.sbatch
 ```
+
 ## Files Overview
 
 ### Main Scripts
@@ -21,13 +25,6 @@ sbatch scripts/run_final_experiment.sbatch
 ### Models
 - PointPillars checkpoint: `checkpoints/hv_pointpillars_*.pth`
 - CenterPoint checkpoint: `checkpoints/centerpoint_*.pth`
-
-## Reports
-
-- **Full Assignment Guide**: [README_ASSIGNMENT.md](README_ASSIGNMENT.md)
-- **Solution Summary**: [SOLUTION_SUMMARY.md](SOLUTION_SUMMARY.md)
-- **SLURM Usage**: [SBATCH_USAGE.md](SBATCH_USAGE.md)
-
 
 ## Results
 
@@ -53,20 +50,8 @@ logs/
 ├── inference_<JOB_ID>.out    # Standard output
 ├── inference_<JOB_ID>.err    # Error output
 └── summary_<JOB_ID>.txt      # Job summary
+
+results/                      # Best result
+
+reports.md                    # Final report
 ```
-
-### Performance Metrics
-
-| Model/Dataset | FPS | Latency (ms) | Memory (GB) |
-|--------------|-----|--------------|-------------|
-| Waymo + PointPillars | 15-20 | 50-70 | 2-3 |
-| nuScenes + CenterPoint | 8-12 | 80-120 | 3-4 |
-
-### Key Takeaways
-
-1. **Speed vs Accuracy**: PointPillars faster, CenterPoint more accurate
-2. **Dataset Characteristics**: Waymo (highway), nuScenes (urban)
-3. **Model Strengths**: PointPillars for real-time, CenterPoint for accuracy
-4. **Failure Cases**: Long-range, small objects, occlusion
-5. **Production**: Choose based on application requirements
-
